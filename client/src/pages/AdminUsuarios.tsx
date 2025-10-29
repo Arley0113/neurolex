@@ -189,7 +189,9 @@ export default function AdminUsuarios() {
                             {user.email}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(user.fechaRegistro), "dd MMM yyyy", { locale: es })}
+                            {user.fechaRegistro 
+                              ? format(new Date(user.fechaRegistro), "dd MMM yyyy", { locale: es })
+                              : "N/A"}
                           </TableCell>
                           <TableCell>
                             <Badge variant="secondary">{user.karma || 0} pts</Badge>
