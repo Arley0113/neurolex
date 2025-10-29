@@ -52,6 +52,13 @@ export default function AdminDebates() {
   // Cargar debates
   const { data: debates = [], isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/debates", userId],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/debates?adminId=${userId}`);
+      if (!response.ok) {
+        throw new Error("Error al cargar debates");
+      }
+      return response.json();
+    },
     enabled: !!user?.isAdmin && !!userId,
   });
 
