@@ -11,7 +11,8 @@ import {
   BarChart3, 
   Shield, 
   AlertCircle,
-  Loader2 
+  Loader2,
+  MessageSquare 
 } from "lucide-react";
 import { useEffect } from "react";
 import { useLocation, Link } from "wouter";
@@ -239,6 +240,18 @@ export default function Admin() {
                     <CardTitle>Sondeos</CardTitle>
                     <CardDescription>
                       Crear y gestionar sondeos de opinión
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
+              <Link href="/admin/debates">
+                <Card className="hover-elevate cursor-pointer h-full" data-testid="card-admin-debates">
+                  <CardHeader>
+                    <MessageSquare className="h-8 w-8 text-primary mb-2" />
+                    <CardTitle>Debates</CardTitle>
+                    <CardDescription>
+                      Gestionar debates del foro comunitario
                     </CardDescription>
                   </CardHeader>
                 </Card>

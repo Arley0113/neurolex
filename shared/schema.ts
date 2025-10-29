@@ -173,14 +173,39 @@ export const votes = pgTable("votes", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-// Comentarios en propuestas y noticias
+// Debates del foro
+export const debates = pgTable("debates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  titulo: text("titulo").notNull(),
+  contenido: text("contenido").notNull(),
+  
+  // Clasificación
+  categoria: text("categoria").notNull(), // "politica", "economia", "social", "tecnologia", "medioambiente", "general"
+  
+  // Autor
+  autorId: varchar("autor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // Estadísticas
+  numRespuestas: integer("num_respuestas").notNull().default(0),
+  numVistas: integer("num_vistas").notNull().default(0),
+  
+  // Destacado
+  destacado: boolean("destacado").notNull().default(false),
+  
+  // Metadata
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Comentarios en propuestas, noticias y debates
 export const comments = pgTable("comments", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   contenido: text("contenido").notNull(),
   
-  // Puede ser comentario en propuesta o noticia
+  // Puede ser comentario en propuesta, noticia o debate
   propuestaId: varchar("propuesta_id").references(() => proposals.id, { onDelete: "cascade" }),
   noticiaId: varchar("noticia_id").references(() => news.id, { onDelete: "cascade" }),
+  debateId: varchar("debate_id").references(() => debates.id, { onDelete: "cascade" }),
   
   // Comentarios anidados
   parentId: varchar("parent_id").references((): any => comments.id, { onDelete: "cascade" }),
@@ -233,6 +258,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
     references: [tokensBalance.userId],
   }),
   proposals: many(proposals),
+  debates: many(debates),
   comments: many(comments),
   karmaHistory: many(karmaHistory),
   userBadges: many(userBadges),
@@ -275,6 +301,14 @@ export const pollOptionsRelations = relations(pollOptions, ({ one, many }) => ({
   votes: many(votes),
 }));
 
+export const debatesRelations = relations(debates, ({ one, many }) => ({
+  autor: one(users, {
+    fields: [debates.autorId],
+    references: [users.id],
+  }),
+  comments: many(comments),
+}));
+
 export const commentsRelations = relations(comments, ({ one, many }) => ({
   autor: one(users, {
     fields: [comments.autorId],
@@ -287,6 +321,10 @@ export const commentsRelations = relations(comments, ({ one, many }) => ({
   noticia: one(news, {
     fields: [comments.noticiaId],
     references: [news.id],
+  }),
+  debate: one(debates, {
+    fields: [comments.debateId],
+    references: [debates.id],
   }),
   parent: one(comments, {
     fields: [comments.parentId],
@@ -351,6 +389,23 @@ export const insertProposalSchema = createInsertSchema(proposals, {
 
 export type InsertProposal = z.infer<typeof insertProposalSchema>;
 export type Proposal = typeof proposals.$inferSelect;
+
+// Debates
+export const insertDebateSchema = createInsertSchema(debates, {
+  titulo: z.string().min(10, "El título debe tener al menos 10 caracteres"),
+  contenido: z.string().min(20, "El contenido debe tener al menos 20 caracteres"),
+  categoria: z.string().min(1, "La categoría es obligatoria"),
+}).omit({
+  id: true,
+  numRespuestas: true,
+  numVistas: true,
+  destacado: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertDebate = z.infer<typeof insertDebateSchema>;
+export type Debate = typeof debates.$inferSelect;
 
 // Sondeos
 export const insertPollSchema = createInsertSchema(polls).omit({

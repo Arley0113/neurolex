@@ -16,12 +16,14 @@ import Admin from "@/pages/Admin";
 import AdminNoticias from "@/pages/AdminNoticias";
 import AdminPropuestas from "@/pages/AdminPropuestas";
 import AdminSondeos from "@/pages/AdminSondeos";
+import AdminDebates from "@/pages/AdminDebates";
 import AdminUsuarios from "@/pages/AdminUsuarios";
 import Noticias from "@/pages/Noticias";
 import NoticiaDetalle from "@/pages/NoticiaDetalle";
 import Propuestas from "@/pages/Propuestas";
 import Sondeos from "@/pages/Sondeos";
 import Foro from "@/pages/Foro";
+import ForoDetalle from "@/pages/ForoDetalle";
 import Informacion from "@/pages/Informacion";
 import Contacto from "@/pages/Contacto";
 import NotFound from "@/pages/not-found";
@@ -46,6 +48,7 @@ function Router() {
       <Route path="/admin/noticias" component={AdminNoticias} />
       <Route path="/admin/propuestas" component={AdminPropuestas} />
       <Route path="/admin/sondeos" component={AdminSondeos} />
+      <Route path="/admin/debates" component={AdminDebates} />
       <Route path="/admin/usuarios" component={AdminUsuarios} />
       
       {/* Contenido principal */}
@@ -53,6 +56,7 @@ function Router() {
       <Route path="/noticias" component={Noticias} />
       <Route path="/propuestas" component={Propuestas} />
       <Route path="/sondeos" component={Sondeos} />
+      <Route path="/foro/:id" component={ForoDetalle} />
       <Route path="/foro" component={Foro} />
       
       {/* Información y contacto */}
