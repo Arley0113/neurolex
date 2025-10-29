@@ -110,9 +110,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===========================================================================
 
   // Obtener información del usuario actual
-  app.get("/api/users/me", async (req: Request, res: Response) => {
+  app.get("/api/users/me/:userId", async (req: Request, res: Response) => {
     try {
-      const userId = req.query.userId as string;
+      const { userId } = req.params;
       if (!userId) {
         return res.status(400).json({ error: "Usuario no autenticado" });
       }
@@ -150,6 +150,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al obtener tokens:", error);
       res.status(500).json({ error: "Error al obtener balance de tokens" });
+    }
+  });
+
+  // Obtener historial de transacciones de un usuario
+  app.get("/api/transactions/:userId", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const transactions = await storage.getTokenTransactions(userId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error al obtener transacciones:", error);
+      res.status(500).json({ error: "Error al obtener historial de transacciones" });
     }
   });
 

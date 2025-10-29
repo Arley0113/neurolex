@@ -13,6 +13,14 @@ export const nivelUsuarioEnum = pgEnum("nivel_usuario", ["basico", "verificado"]
 export const tipoTokenEnum = pgEnum("tipo_token", ["TP", "TA", "TGR"]);
 export const estadoPropuestaEnum = pgEnum("estado_propuesta", ["borrador", "en_deliberacion", "votacion", "aprobada", "rechazada", "archivada"]);
 export const tipoNoticiaEnum = pgEnum("tipo_noticia", ["nacional", "internacional", "economia", "social", "tecnologia", "otro"]);
+export const tipoTransaccionEnum = pgEnum("tipo_transaccion", [
+  "ganado_participacion", 
+  "ganado_recompensa", 
+  "comprado", 
+  "gastado_apoyo", 
+  "gastado_gobernanza",
+  "transferido"
+]);
 
 // Tabla de Usuarios
 export const users = pgTable("users", {
@@ -53,6 +61,18 @@ export const tokensBalance = pgTable("tokens_balance", {
   tokensGobernanza: integer("tokens_gobernanza").notNull().default(0),
   
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Historial de transacciones de Tokens
+export const tokenTransactions = pgTable("token_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tipoToken: tipoTokenEnum("tipo_token").notNull(), // TP, TA, o TGR
+  cantidad: integer("cantidad").notNull(), // puede ser positivo (ganado/comprado) o negativo (gastado)
+  tipoTransaccion: tipoTransaccionEnum("tipo_transaccion").notNull(),
+  descripcion: text("descripcion").notNull(), // ej: "Votaste en una propuesta", "Compraste 100 TA"
+  relacionadoId: varchar("relacionado_id"), // ID de propuesta, sondeo, etc. que generó la transacción
+  createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Historial de transacciones de Karma
@@ -372,6 +392,18 @@ export const insertContactSchema = createInsertSchema(contacts, {
 
 export type InsertContact = z.infer<typeof insertContactSchema>;
 export type Contact = typeof contacts.$inferSelect;
+
+// Transacciones de tokens
+export const insertTokenTransactionSchema = createInsertSchema(tokenTransactions, {
+  cantidad: z.number().int("La cantidad debe ser un número entero"),
+  descripcion: z.string().min(1, "La descripción no puede estar vacía"),
+}).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertTokenTransaction = z.infer<typeof insertTokenTransactionSchema>;
+export type TokenTransaction = typeof tokenTransactions.$inferSelect;
 
 // Tipos de balance de tokens
 export type TokensBalance = typeof tokensBalance.$inferSelect;

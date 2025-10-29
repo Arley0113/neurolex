@@ -3,6 +3,7 @@
 import { 
   users, 
   tokensBalance, 
+  tokenTransactions,
   karmaHistory, 
   news, 
   proposals, 
@@ -16,6 +17,8 @@ import {
   type User, 
   type InsertUser,
   type TokensBalance,
+  type TokenTransaction,
+  type InsertTokenTransaction,
   type News,
   type InsertNews,
   type Proposal,
@@ -49,6 +52,10 @@ export interface IStorage {
   getTokensBalance(userId: string): Promise<TokensBalance | undefined>;
   createTokensBalance(userId: string): Promise<TokensBalance>;
   updateTokensBalance(userId: string, data: Partial<TokensBalance>): Promise<TokensBalance | undefined>;
+  
+  // Transacciones de tokens
+  createTokenTransaction(transactionData: InsertTokenTransaction): Promise<TokenTransaction>;
+  getTokenTransactions(userId: string): Promise<TokenTransaction[]>;
 
   // Karma
   addKarma(userId: string, cantidad: number, razon: string): Promise<void>;
@@ -164,6 +171,24 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tokensBalance.userId, userId))
       .returning();
     return balance || undefined;
+  }
+
+  // === TRANSACCIONES DE TOKENS ===
+  async createTokenTransaction(transactionData: InsertTokenTransaction): Promise<TokenTransaction> {
+    const [transaction] = await db
+      .insert(tokenTransactions)
+      .values(transactionData)
+      .returning();
+    return transaction;
+  }
+
+  async getTokenTransactions(userId: string): Promise<TokenTransaction[]> {
+    const transactions = await db
+      .select()
+      .from(tokenTransactions)
+      .where(eq(tokenTransactions.userId, userId))
+      .orderBy(desc(tokenTransactions.createdAt));
+    return transactions;
   }
 
   // === KARMA ===
