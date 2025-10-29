@@ -18,6 +18,7 @@ import AdminPropuestas from "@/pages/AdminPropuestas";
 import AdminSondeos from "@/pages/AdminSondeos";
 import AdminUsuarios from "@/pages/AdminUsuarios";
 import Noticias from "@/pages/Noticias";
+import NoticiaDetalle from "@/pages/NoticiaDetalle";
 import Propuestas from "@/pages/Propuestas";
 import Sondeos from "@/pages/Sondeos";
 import Informacion from "@/pages/Informacion";
@@ -47,6 +48,7 @@ function Router() {
       <Route path="/admin/usuarios" component={AdminUsuarios} />
       
       {/* Contenido principal */}
+      <Route path="/noticias/:id" component={NoticiaDetalle} />
       <Route path="/noticias" component={Noticias} />
       <Route path="/propuestas" component={Propuestas} />
       <Route path="/sondeos" component={Sondeos} />
