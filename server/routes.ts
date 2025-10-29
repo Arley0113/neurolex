@@ -3,7 +3,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertNewsSchema, insertProposalSchema, insertPollSchema, insertPollOptionSchema, insertCommentSchema, insertContactSchema } from "@shared/schema";
+import { insertUserSchema, insertNewsSchema, insertProposalSchema, insertPollSchema, insertPollOptionSchema, insertDebateSchema, insertCommentSchema, insertContactSchema } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import bcrypt from "bcrypt";
@@ -755,6 +755,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ===========================================================================
+  // DEBATES
+  // ===========================================================================
+
+  // Obtener todos los debates
+  app.get("/api/debates", async (req: Request, res: Response) => {
+    try {
+      const debates = await storage.getAllDebates();
+      res.json(debates);
+    } catch (error) {
+      console.error("Error al obtener debates:", error);
+      res.status(500).json({ error: "Error al obtener debates" });
+    }
+  });
+
+  // Obtener un debate por ID
+  app.get("/api/debates/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const debate = await storage.getDebateById(id);
+      
+      if (!debate) {
+        return res.status(404).json({ error: "Debate no encontrado" });
+      }
+
+      // Incrementar vistas
+      await storage.incrementDebateViews(id);
+
+      res.json(debate);
+    } catch (error) {
+      console.error("Error al obtener debate:", error);
+      res.status(500).json({ error: "Error al obtener debate" });
+    }
+  });
+
+  // Obtener comentarios de un debate
+  app.get("/api/debates/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const comentarios = await storage.getCommentsByDebate(id);
+      
+      // Obtener información del autor para cada comentario
+      const comentariosConAutor = await Promise.all(
+        comentarios.map(async (comentario) => {
+          const autor = await storage.getUser(comentario.autorId);
+          return {
+            ...comentario,
+            autorNombre: autor?.username || "Anónimo",
+          };
+        })
+      );
+
+      res.json(comentariosConAutor);
+    } catch (error) {
+      console.error("Error al obtener comentarios del debate:", error);
+      res.status(500).json({ error: "Error al obtener comentarios" });
+    }
+  });
+
+  // Crear comentario en un debate
+  app.post("/api/debates/:id/comments", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const validation = validateRequest(insertCommentSchema.extend({ debateId: z.string() }).partial({ propuestaId: true, noticiaId: true }), {
+        ...req.body,
+        debateId: id,
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const comentario = await storage.createComment(validation.data!);
+
+      // Incrementar contador de respuestas del debate
+      const debate = await storage.getDebateById(id);
+      if (debate) {
+        await storage.updateDebate(id, {
+          numRespuestas: (debate.numRespuestas || 0) + 1,
+        });
+      }
+
+      // Dar karma por comentar
+      await storage.addKarma(validation.data!.autorId, 2, "Comentario en debate");
+
+      res.status(201).json(comentario);
+    } catch (error) {
+      console.error("Error al crear comentario:", error);
+      res.status(500).json({ error: "Error al crear comentario" });
+    }
+  });
+
+  // ===========================================================================
   // ADMINISTRACIÓN
   // ===========================================================================
 
@@ -883,6 +975,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al crear sondeo:", error);
       res.status(500).json({ error: "Error al crear sondeo" });
+    }
+  });
+
+  // --- DEBATES (Admin) ---
+
+  // Crear debate (Admin)
+  app.post("/api/admin/debates", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { adminId, ...debateData } = req.body;
+      const validation = validateRequest(insertDebateSchema, debateData);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const debate = await storage.createDebate(validation.data!);
+      res.status(201).json(debate);
+    } catch (error) {
+      console.error("Error al crear debate:", error);
+      res.status(500).json({ error: "Error al crear debate" });
+    }
+  });
+
+  // Editar debate (Admin)
+  app.put("/api/admin/debates/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { adminId, ...debateData } = req.body;
+      const validation = validateRequest(insertDebateSchema.partial(), debateData);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const debate = await storage.updateDebate(id, validation.data!);
+      if (!debate) {
+        return res.status(404).json({ error: "Debate no encontrado" });
+      }
+
+      res.json(debate);
+    } catch (error) {
+      console.error("Error al editar debate:", error);
+      res.status(500).json({ error: "Error al editar debate" });
+    }
+  });
+
+  // Eliminar debate (Admin)
+  app.delete("/api/admin/debates/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteDebate(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error al eliminar debate:", error);
+      res.status(500).json({ error: "Error al eliminar debate" });
     }
   });
 

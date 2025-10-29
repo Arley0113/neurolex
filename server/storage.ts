@@ -10,6 +10,7 @@ import {
   polls, 
   pollOptions, 
   votes, 
+  debates,
   comments, 
   contacts,
   badges,
@@ -28,6 +29,8 @@ import {
   type PollOption,
   type InsertPollOption,
   type Vote,
+  type Debate,
+  type InsertDebate,
   type Comment,
   type InsertComment,
   type Contact,
@@ -86,9 +89,18 @@ export interface IStorage {
   vote(userId: string, pollId: string, optionId: string): Promise<void>;
   hasUserVoted(userId: string, pollId: string): Promise<boolean>;
 
+  // Debates
+  getAllDebates(): Promise<Debate[]>;
+  getDebateById(id: string): Promise<Debate | undefined>;
+  createDebate(debateData: InsertDebate): Promise<Debate>;
+  updateDebate(id: string, data: Partial<Debate>): Promise<Debate | undefined>;
+  deleteDebate(id: string): Promise<void>;
+  incrementDebateViews(id: string): Promise<void>;
+
   // Comentarios
   getCommentsByProposal(propuestaId: string): Promise<Comment[]>;
   getCommentsByNews(noticiaId: string): Promise<Comment[]>;
+  getCommentsByDebate(debateId: string): Promise<Comment[]>;
   createComment(commentData: InsertComment): Promise<Comment>;
   updateComment(id: string, data: Partial<Comment>): Promise<Comment | undefined>;
   deleteComment(id: string): Promise<void>;
@@ -428,8 +440,90 @@ export class DatabaseStorage implements IStorage {
     return comment || undefined;
   }
 
+  async getCommentsByDebate(debateId: string): Promise<Comment[]> {
+    return await db
+      .select()
+      .from(comments)
+      .where(eq(comments.debateId, debateId))
+      .orderBy(desc(comments.createdAt));
+  }
+
   async deleteComment(id: string): Promise<void> {
     await db.delete(comments).where(eq(comments.id, id));
+  }
+
+  // === DEBATES ===
+  async getAllDebates(): Promise<Debate[]> {
+    const debatesWithAuthor = await db
+      .select({
+        debate: debates,
+        autor: {
+          id: users.id,
+          username: users.username,
+        },
+      })
+      .from(debates)
+      .leftJoin(users, eq(debates.autorId, users.id))
+      .orderBy(desc(debates.createdAt));
+
+    return debatesWithAuthor.map(d => ({
+      ...d.debate,
+      autorNombre: d.autor?.username || "Anónimo",
+    }));
+  }
+
+  async getDebateById(id: string): Promise<Debate | undefined> {
+    const [debateWithAuthor] = await db
+      .select({
+        debate: debates,
+        autor: {
+          id: users.id,
+          username: users.username,
+        },
+      })
+      .from(debates)
+      .leftJoin(users, eq(debates.autorId, users.id))
+      .where(eq(debates.id, id));
+
+    if (!debateWithAuthor) return undefined;
+
+    return {
+      ...debateWithAuthor.debate,
+      autorNombre: debateWithAuthor.autor?.username || "Anónimo",
+    };
+  }
+
+  async createDebate(debateData: InsertDebate): Promise<Debate> {
+    const [debate] = await db
+      .insert(debates)
+      .values({
+        ...debateData,
+        numRespuestas: 0,
+        numVistas: 0,
+        destacado: debateData.destacado || false,
+      })
+      .returning();
+    return debate;
+  }
+
+  async updateDebate(id: string, data: Partial<Debate>): Promise<Debate | undefined> {
+    const [debate] = await db
+      .update(debates)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(debates.id, id))
+      .returning();
+    return debate || undefined;
+  }
+
+  async deleteDebate(id: string): Promise<void> {
+    await db.delete(debates).where(eq(debates.id, id));
+  }
+
+  async incrementDebateViews(id: string): Promise<void> {
+    await db
+      .update(debates)
+      .set({ numVistas: sql`${debates.numVistas} + 1` })
+      .where(eq(debates.id, id));
   }
 
   // === CONTACTO ===

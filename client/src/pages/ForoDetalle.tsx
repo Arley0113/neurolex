@@ -15,6 +15,12 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Link } from "wouter";
+import type { DebateConAutor } from "@/components/DebateCard";
+import type { Comment } from "@shared/schema";
+
+interface ComentarioConAutor extends Comment {
+  autorNombre?: string;
+}
 
 const categoriaColors: Record<string, string> = {
   politica: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
@@ -42,12 +48,12 @@ export default function ForoDetalle() {
     enabled: !!userId,
   });
 
-  const { data: debate, isLoading } = useQuery({
+  const { data: debate, isLoading } = useQuery<DebateConAutor>({
     queryKey: ["/api/debates", id],
     enabled: !!id,
   });
 
-  const { data: comentarios = [] } = useQuery({
+  const { data: comentarios = [] } = useQuery<ComentarioConAutor[]>({
     queryKey: ["/api/debates", id, "comments"],
     enabled: !!id,
   });

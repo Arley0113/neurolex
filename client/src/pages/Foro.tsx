@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { DebateCard } from "@/components/DebateCard";
+import { DebateCard, type DebateConAutor } from "@/components/DebateCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,67 +23,13 @@ export default function Foro() {
     enabled: !!userId,
   });
 
-  // Datos de ejemplo para debates (en producción vendrían del backend)
-  const debates = [
-    {
-      id: "1",
-      titulo: "¿Cuál es tu opinión sobre la nueva ley de transparencia?",
-      categoria: "politica",
-      autorNombre: "María García",
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      numRespuestas: 45,
-      numVistas: 234,
-      ultimaActividad: new Date(Date.now() - 30 * 60 * 1000),
-      destacado: true,
-    },
-    {
-      id: "2",
-      titulo: "Propuesta: Crear un sistema de recompensas para ciudadanos activos",
-      categoria: "general",
-      autorNombre: "Juan Pérez",
-      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-      numRespuestas: 28,
-      numVistas: 156,
-      ultimaActividad: new Date(Date.now() - 1 * 60 * 60 * 1000),
-    },
-    {
-      id: "3",
-      titulo: "Debate: ¿Deberían los tokens de gobernanza tener peso diferenciado?",
-      categoria: "economia",
-      autorNombre: "Ana Martínez",
-      createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000),
-      numRespuestas: 67,
-      numVistas: 423,
-      ultimaActividad: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      destacado: true,
-    },
-    {
-      id: "4",
-      titulo: "¿Cómo mejorar la participación ciudadana en las votaciones?",
-      categoria: "social",
-      autorNombre: "Carlos López",
-      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-      numRespuestas: 34,
-      numVistas: 189,
-      ultimaActividad: new Date(Date.now() - 4 * 60 * 60 * 1000),
-    },
-    {
-      id: "5",
-      titulo: "Tecnología blockchain aplicada a la democracia digital",
-      categoria: "tecnologia",
-      autorNombre: "Laura Fernández",
-      createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-      numRespuestas: 52,
-      numVistas: 312,
-      ultimaActividad: new Date(Date.now() - 6 * 60 * 60 * 1000),
-    },
-  ];
+  const { data: debates = [], isLoading: debatesLoading } = useQuery<DebateConAutor[]>({
+    queryKey: ["/api/debates"],
+  });
 
-  const debatesTrending = [
-    { id: "1", titulo: "¿Cuál es tu opinión sobre la nueva ley de transparencia?", numRespuestas: 45 },
-    { id: "3", titulo: "¿Deberían los tokens tener peso diferenciado?", numRespuestas: 67 },
-    { id: "5", titulo: "Blockchain y democracia digital", numRespuestas: 52 },
-  ];
+  const debatesTrending = debates
+    .sort((a, b) => (b.numRespuestas || 0) - (a.numRespuestas || 0))
+    .slice(0, 3);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -123,7 +69,11 @@ export default function Foro() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Feed principal */}
             <div className="lg:col-span-2 space-y-4">
-              {debates.length === 0 ? (
+              {debatesLoading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : debates.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground">No hay debates disponibles</p>
                 </div>

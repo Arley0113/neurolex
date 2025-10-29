@@ -4,18 +4,13 @@ import { MessageSquare, Eye, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { Link } from "wouter";
+import type { Debate } from "@shared/schema";
 
-interface DebateCardProps {
-  id: string;
-  titulo: string;
-  categoria: string;
-  autorNombre: string;
-  createdAt: Date;
-  numRespuestas: number;
-  numVistas: number;
-  ultimaActividad?: Date;
-  destacado?: boolean;
+export interface DebateConAutor extends Debate {
+  autorNombre?: string;
 }
+
+export type DebateCardProps = DebateConAutor;
 
 const categoriaColors: Record<string, string> = {
   politica: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
@@ -26,21 +21,19 @@ const categoriaColors: Record<string, string> = {
   general: "bg-gray-100 text-gray-800 dark:bg-gray-950 dark:text-gray-300",
 };
 
-export function DebateCard({
-  id,
-  titulo,
-  categoria,
-  autorNombre,
-  createdAt,
-  numRespuestas,
-  numVistas,
-  ultimaActividad,
-  destacado = false,
-}: DebateCardProps) {
+export function DebateCard(debate: DebateCardProps) {
+  const {
+    id,
+    titulo,
+    categoria,
+    autorNombre = "Anónimo",
+    createdAt,
+    numRespuestas,
+    numVistas,
+    destacado = false,
+  } = debate;
+
   const tiempoRelativo = formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: es });
-  const ultimaActividadRelativa = ultimaActividad
-    ? formatDistanceToNow(new Date(ultimaActividad), { addSuffix: true, locale: es })
-    : null;
 
   return (
     <Link href={`/foro/${id}`}>
@@ -77,11 +70,6 @@ export function DebateCard({
                 <Clock className="h-3 w-3" />
                 {tiempoRelativo}
               </span>
-              {ultimaActividadRelativa && (
-                <span className="text-primary">
-                  Última actividad: {ultimaActividadRelativa}
-                </span>
-              )}
             </div>
           </div>
 
