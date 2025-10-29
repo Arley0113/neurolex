@@ -134,6 +134,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // TOKENS
   // ===========================================================================
 
+  // Vincular wallet de MetaMask al usuario (CON VERIFICACIÓN DE FIRMA)
+  app.post("/api/users/:userId/link-wallet", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const { walletAddress, message, signature } = req.body;
+
+      if (!walletAddress || !message || !signature) {
+        return res.status(400).json({ error: "Wallet, mensaje y firma requeridos" });
+      }
+
+      // Validar formato de dirección Ethereum
+      if (!walletAddress.match(/^0x[a-fA-F0-9]{40}$/)) {
+        return res.status(400).json({ error: "Formato de dirección Ethereum inválido" });
+      }
+
+      // Verificar que el usuario existe
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+
+      // CRÍTICO: Verificar firma criptográfica para demostrar propiedad de la wallet
+      const { verifyMessage } = await import("ethers");
+      try {
+        const recoveredAddress = verifyMessage(message, signature);
+        
+        if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+          return res.status(403).json({ 
+            error: "Firma inválida. No puedes demostrar propiedad de esta wallet." 
+          });
+        }
+
+        console.log(`✅ Firma verificada para wallet ${walletAddress}`);
+      } catch (error) {
+        console.error("Error al verificar firma:", error);
+        return res.status(403).json({ error: "Firma inválida o corrupta" });
+      }
+
+      // Verificar que la wallet no esté ya vinculada a otro usuario
+      const existingUserWithWallet = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+      if (existingUserWithWallet.length > 0 && existingUserWithWallet[0].id !== userId) {
+        return res.status(400).json({ error: "Esta wallet ya está vinculada a otro usuario" });
+      }
+
+      // Vincular wallet al usuario (solo después de verificar firma)
+      const updatedUser = await storage.updateUser(userId, {
+        walletAddress: walletAddress.toLowerCase(), // Normalizar a minúsculas
+      });
+
+      console.log(`Wallet ${walletAddress} vinculada exitosamente al usuario ${userId}`);
+
+      res.json({
+        success: true,
+        message: "Wallet vinculada exitosamente",
+        walletAddress: updatedUser?.walletAddress,
+      });
+    } catch (error: any) {
+      console.error("Error al vincular wallet:", error);
+      res.status(500).json({ error: error.message || "Error al vincular wallet" });
+    }
+  });
+
+  // ===========================================================================
+  // TOKENS
+  // ===========================================================================
+
   // Obtener balance de tokens de un usuario
   app.get("/api/tokens/:userId", async (req: Request, res: Response) => {
     try {
@@ -162,6 +228,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al obtener transacciones:", error);
       res.status(500).json({ error: "Error al obtener historial de transacciones" });
+    }
+  });
+
+  // Procesar compra de tokens con criptomonedas (CON VERIFICACIÓN BLOCKCHAIN)
+  app.post("/api/tokens/purchase", async (req: Request, res: Response) => {
+    try {
+      const { userId, taAmount, ethAmount, txHash } = req.body;
+
+      // 1. Validar datos básicos
+      if (!userId || !taAmount || !ethAmount || !txHash) {
+        return res.status(400).json({ error: "Datos incompletos para la compra" });
+      }
+
+      // 2. Validar parámetros de compra (rangos, congruencia TA↔ETH)
+      const { verifyTransaction, validatePurchaseParams } = await import("./blockchain-verifier");
+      const { BLOCKCHAIN_CONFIG } = await import("../shared/blockchain-config");
+      
+      const paramValidation = validatePurchaseParams(taAmount, ethAmount);
+      if (!paramValidation.valid) {
+        return res.status(400).json({ error: paramValidation.error });
+      }
+
+      // 3. Validar que el usuario existe
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+
+      // 3.5 CRÍTICO: Validar que el usuario tenga una wallet vinculada
+      if (!user.walletAddress) {
+        return res.status(400).json({ 
+          error: "Debes vincular tu wallet de MetaMask antes de comprar tokens. Conecta tu wallet primero." 
+        });
+      }
+
+      // 4. VERIFICAR TRANSACCIÓN EN LA BLOCKCHAIN (CRÍTICO)
+      console.log(`Verificando transacción blockchain: ${txHash} desde ${user.walletAddress}`);
+      const verification = await verifyTransaction(
+        txHash,
+        ethAmount,
+        BLOCKCHAIN_CONFIG.platformWallet,
+        user.walletAddress // CRÍTICO: Validar que tx.from coincida con la wallet del usuario
+      );
+
+      if (!verification.valid) {
+        console.error(`Verificación blockchain falló: ${verification.error}`);
+        return res.status(400).json({ 
+          error: verification.error || "Transacción blockchain inválida" 
+        });
+      }
+
+      console.log(`✅ Transacción verificada exitosamente: ${txHash}`);
+
+      // 5. Verificar que el txHash no haya sido usado antes (doble verificación con BD)
+      const existingTx = await storage.getTransactionByHash(txHash);
+      if (existingTx) {
+        return res.status(400).json({ 
+          error: "Esta transacción ya fue procesada anteriormente" 
+        });
+      }
+
+      // 6. Obtener o crear balance de tokens
+      let balance = await storage.getTokensBalance(userId);
+      if (!balance) {
+        balance = await storage.createTokensBalance(userId);
+      }
+
+      // 7. Actualizar balance (agregar TA tokens)
+      const newBalance = await storage.updateTokensBalance(userId, {
+        tokensApoyo: balance.tokensApoyo + taAmount,
+      });
+
+      // 8. Registrar transacción con txHash para prevenir duplicados
+      await storage.createTokenTransaction({
+        userId,
+        tokenType: "tokensApoyo",
+        amount: taAmount,
+        transactionType: "comprado",
+        descripcion: `Compra de ${taAmount} TA por ${ethAmount} ETH`,
+        relacionadoId: txHash, // Guardamos el hash completo
+      });
+
+      res.json({
+        success: true,
+        balance: newBalance,
+        message: `Compra exitosa: ${taAmount} TA tokens agregados`,
+        txHash,
+      });
+    } catch (error: any) {
+      console.error("Error al procesar compra de tokens:", error);
+      res.status(500).json({ 
+        error: error.message || "Error al procesar la compra" 
+      });
     }
   });
 
@@ -333,6 +492,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al apoyar propuesta:", error);
       res.status(500).json({ error: "Error al apoyar propuesta" });
+    }
+  });
+
+  // Donar tokens de apoyo (TA) a una propuesta
+  app.post("/api/proposals/donate", async (req: Request, res: Response) => {
+    try {
+      const { userId, proposalId, amount } = req.body;
+
+      if (!userId || !proposalId || !amount) {
+        return res.status(400).json({ error: "Datos incompletos para la donación" });
+      }
+
+      if (amount <= 0) {
+        return res.status(400).json({ error: "La cantidad debe ser mayor a 0" });
+      }
+
+      // Validar que la propuesta existe
+      const propuesta = await storage.getProposalById(proposalId);
+      if (!propuesta) {
+        return res.status(404).json({ error: "Propuesta no encontrada" });
+      }
+
+      // Obtener balance del usuario
+      const balance = await storage.getTokensBalance(userId);
+      if (!balance) {
+        return res.status(404).json({ error: "Balance de tokens no encontrado" });
+      }
+
+      // Verificar que el usuario tenga suficientes TA tokens
+      if (balance.tokensApoyo < amount) {
+        return res.status(400).json({ error: "No tienes suficientes Tokens de Apoyo" });
+      }
+
+      // Descontar TA tokens del usuario
+      await storage.updateTokensBalance(userId, {
+        tokensApoyo: balance.tokensApoyo - amount,
+      });
+
+      // Incrementar apoyos TA de la propuesta
+      await storage.updateProposal(proposalId, {
+        apoyosTA: propuesta.apoyosTA + amount,
+      });
+
+      // Registrar transacción
+      await storage.createTokenTransaction({
+        userId,
+        tokenType: "tokensApoyo",
+        amount: -amount, // Negativo porque se gasta
+        transactionType: "gastado_apoyo",
+        descripcion: `Donación de ${amount} TA a propuesta: ${propuesta.titulo}`,
+        relacionadoId: proposalId,
+      });
+
+      // Dar karma al usuario por donar
+      await storage.addKarma(userId, 10, "Donación a propuesta");
+
+      res.json({
+        success: true,
+        message: `Has donado ${amount} TA a la propuesta`,
+      });
+    } catch (error) {
+      console.error("Error al procesar donación:", error);
+      res.status(500).json({ error: "Error al procesar la donación" });
     }
   });
 

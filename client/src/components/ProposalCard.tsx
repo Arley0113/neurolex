@@ -1,11 +1,13 @@
 // Tarjeta de propuesta ciudadana para la plataforma Neurolex
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ThumbsUp, MessageSquare, TrendingUp, Coins } from "lucide-react";
+import { ThumbsUp, MessageSquare, TrendingUp, Coins, Heart } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { Link } from "wouter";
+import { DonateModal } from "./DonateModal";
 
 interface ProposalCardProps {
   id: string;
@@ -43,6 +45,7 @@ export function ProposalCard({
 }: ProposalCardProps) {
   const estadoInfo = estadoConfig[estado] || estadoConfig.borrador;
   const tiempoRelativo = formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: es });
+  const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
 
   return (
     <Card className="hover-elevate h-full flex flex-col" data-testid={`card-proposal-${id}`}>
@@ -103,11 +106,27 @@ export function ProposalCard({
               Ver Detalles
             </Button>
           </Link>
+          <Button 
+            variant="default" 
+            size="icon" 
+            onClick={() => setIsDonateModalOpen(true)}
+            data-testid={`button-donate-${id}`}
+          >
+            <Heart className="h-4 w-4" />
+          </Button>
           <Button variant="default" size="icon" data-testid={`button-support-${id}`}>
             <ThumbsUp className="h-4 w-4" />
           </Button>
         </div>
       </CardFooter>
+
+      {/* Modal de donación */}
+      <DonateModal
+        isOpen={isDonateModalOpen}
+        onClose={() => setIsDonateModalOpen(false)}
+        proposalId={id}
+        proposalTitle={titulo}
+      />
     </Card>
   );
 }

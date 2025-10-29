@@ -57,6 +57,7 @@ export interface IStorage {
   // Transacciones de tokens
   createTokenTransaction(transactionData: InsertTokenTransaction): Promise<TokenTransaction>;
   getTokenTransactions(userId: string): Promise<TokenTransaction[]>;
+  getTransactionByHash(txHash: string): Promise<TokenTransaction | undefined>;
 
   // Karma
   addKarma(userId: string, cantidad: number, razon: string): Promise<void>;
@@ -195,6 +196,14 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tokenTransactions.userId, userId))
       .orderBy(desc(tokenTransactions.createdAt));
     return transactions;
+  }
+
+  async getTransactionByHash(txHash: string): Promise<TokenTransaction | undefined> {
+    const [transaction] = await db
+      .select()
+      .from(tokenTransactions)
+      .where(eq(tokenTransactions.relacionadoId, txHash));
+    return transaction || undefined;
   }
 
   // === KARMA ===

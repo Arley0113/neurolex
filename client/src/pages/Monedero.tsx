@@ -14,7 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Wallet, ArrowUpCircle, ArrowDownCircle, AlertCircle } from "lucide-react";
+import { Loader2, Wallet, ArrowUpCircle, ArrowDownCircle, AlertCircle, ShoppingCart } from "lucide-react";
+import { Link } from "wouter";
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useWeb3 } from "@/hooks/useWeb3";
@@ -167,7 +168,15 @@ export default function Monedero() {
 
           {/* Saldos de Tokens */}
           <section className="mb-8">
-            <h2 className="text-2xl font-semibold font-[Poppins] mb-4">Mis Tokens</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-semibold font-[Poppins]">Mis Tokens</h2>
+              <Link href="/comprar-tokens">
+                <Button data-testid="button-buy-tokens">
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Comprar Tokens
+                </Button>
+              </Link>
+            </div>
             {loadingTokens ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[1, 2, 3].map((i) => (

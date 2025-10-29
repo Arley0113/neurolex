@@ -40,6 +40,9 @@ export const users = pgTable("users", {
   // Afinidad política para personalización del feed
   afinidadPolitica: text("afinidad_politica"), // nombre del partido o "Ninguno/Otros"
   
+  // Wallet Web3 vinculada para compras crypto
+  walletAddress: text("wallet_address").unique(), // Dirección Ethereum del usuario
+  
   // Gamificación
   karmaTotal: integer("karma_total").notNull().default(0),
   nivelGamificacion: integer("nivel_gamificacion").notNull().default(1),

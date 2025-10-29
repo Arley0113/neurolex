@@ -11,6 +11,7 @@ import Register from "@/pages/Register";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Monedero from "@/pages/Monedero";
+import ComprarTokens from "@/pages/ComprarTokens";
 import Admin from "@/pages/Admin";
 import AdminNoticias from "@/pages/AdminNoticias";
 import Noticias from "@/pages/Noticias";
@@ -33,6 +34,7 @@ function Router() {
       {/* Dashboard de usuario */}
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/monedero" component={Monedero} />
+      <Route path="/comprar-tokens" component={ComprarTokens} />
       
       {/* Panel de administrador */}
       <Route path="/admin" component={Admin} />
