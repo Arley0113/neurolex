@@ -31,7 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation, Link } from "wouter";
-import { BarChart3, Loader2, Plus, X, AlertCircle, ArrowLeft } from "lucide-react";
+import { BarChart3, Loader2, Plus, X, AlertCircle, ArrowLeft, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -328,9 +328,20 @@ export default function AdminSondeos() {
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between gap-2">
                             <CardTitle className="text-base">{poll.titulo}</CardTitle>
-                            <Badge variant={poll.activo ? "default" : "secondary"}>
-                              {poll.activo ? "Activo" : "Cerrado"}
-                            </Badge>
+                            <div className="flex gap-2">
+                              <Badge variant={poll.activo ? "default" : "secondary"}>
+                                {poll.activo ? "Activo" : "Cerrado"}
+                              </Badge>
+                              <Link href="/sondeos">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  data-testid={`button-view-poll-${poll.id}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                            </div>
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-2">

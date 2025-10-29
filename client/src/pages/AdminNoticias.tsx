@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Newspaper, Plus, Pencil, Trash2, Loader2, ArrowLeft } from "lucide-react";
+import { Newspaper, Plus, Pencil, Trash2, Loader2, ArrowLeft, Eye } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -328,6 +328,15 @@ export default function AdminNoticias() {
                         </div>
                       </div>
                       <div className="flex gap-2">
+                        <Link href="/noticias">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            data-testid={`button-view-news-${newsItem.id}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
                         <Button
                           variant="outline"
                           size="sm"

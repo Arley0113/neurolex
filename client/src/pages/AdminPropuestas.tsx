@@ -1,11 +1,24 @@
 // Panel de Administración - Gestión de Propuestas
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertProposalSchema } from "@shared/schema";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Table,
   TableBody,
@@ -22,6 +35,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -34,7 +56,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation, Link } from "wouter";
-import { FileText, Loader2, Trash2, AlertCircle, ArrowLeft } from "lucide-react";
+import { FileText, Loader2, Trash2, AlertCircle, ArrowLeft, Plus, Pencil, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -43,6 +65,8 @@ export default function AdminPropuestas() {
   const { toast } = useToast();
   const userId = localStorage.getItem("userId");
   const [proposalToDelete, setProposalToDelete] = useState<string | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingProposal, setEditingProposal] = useState<any>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -58,6 +82,52 @@ export default function AdminPropuestas() {
   const { data: proposals, isLoading } = useQuery<any[]>({
     queryKey: ["/api/proposals"],
     enabled: !!userId,
+  });
+
+  const form = useForm({
+    resolver: zodResolver(insertProposalSchema),
+    defaultValues: {
+      titulo: "",
+      descripcion: "",
+      contenidoCompleto: "",
+      estado: "en_deliberacion" as const,
+      categoria: "",
+      partidoRelacionado: "",
+      autorId: userId || "",
+    },
+  });
+
+  const createOrUpdateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (editingProposal) {
+        return apiRequest("PUT", `/api/proposals/${editingProposal.id}`, {
+          ...data,
+          userId,
+        });
+      } else {
+        return apiRequest("POST", "/api/proposals", {
+          ...data,
+          autorId: userId,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/proposals"] });
+      toast({
+        title: editingProposal ? "Propuesta actualizada" : "Propuesta creada",
+        description: `La propuesta ha sido ${editingProposal ? "actualizada" : "creada"} correctamente`,
+      });
+      setIsDialogOpen(false);
+      form.reset();
+      setEditingProposal(null);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo guardar la propuesta",
+      });
+    },
   });
 
   const updateStatusMutation = useMutation({
@@ -104,14 +174,43 @@ export default function AdminPropuestas() {
     },
   });
 
+  const handleEdit = (proposal: any) => {
+    setEditingProposal(proposal);
+    form.reset({
+      titulo: proposal.titulo,
+      descripcion: proposal.descripcion,
+      contenidoCompleto: proposal.contenidoCompleto,
+      estado: proposal.estado,
+      categoria: proposal.categoria,
+      partidoRelacionado: proposal.partidoRelacionado || "",
+      autorId: proposal.autorId,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleDialogChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingProposal(null);
+      form.reset();
+    }
+  };
+
+  const onSubmit = (data: any) => {
+    createOrUpdateMutation.mutate(data);
+  };
+
   const getStatusBadgeVariant = (estado: string) => {
     switch (estado) {
       case "aprobada":
         return "default";
       case "rechazada":
         return "destructive";
-      case "en_revision":
+      case "en_deliberacion":
+      case "borrador":
         return "secondary";
+      case "votacion":
+        return "outline";
       default:
         return "outline";
     }
@@ -123,8 +222,14 @@ export default function AdminPropuestas() {
         return "Aprobada";
       case "rechazada":
         return "Rechazada";
-      case "en_revision":
-        return "En Revisión";
+      case "en_deliberacion":
+        return "En Deliberación";
+      case "borrador":
+        return "Borrador";
+      case "votacion":
+        return "En Votación";
+      case "archivada":
+        return "Archivada";
       default:
         return estado;
     }
@@ -171,22 +276,179 @@ export default function AdminPropuestas() {
 
       <main className="flex-1 bg-background">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-8">
-          <div className="mb-6">
-            <Link href="/admin">
-              <Button variant="ghost" size="sm" className="mb-4">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Volver al Panel
-              </Button>
-            </Link>
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-8 w-8 text-primary" />
-              <h1 className="text-3xl md:text-4xl font-bold font-[Poppins]" data-testid="text-admin-proposals-title">
-                Gestión de Propuestas
-              </h1>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <Link href="/admin">
+                <Button variant="ghost" size="sm" className="mb-4">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Volver al Panel
+                </Button>
+              </Link>
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="h-8 w-8 text-primary" />
+                <h1 className="text-3xl md:text-4xl font-bold font-[Poppins]" data-testid="text-admin-proposals-title">
+                  Gestión de Propuestas
+                </h1>
+              </div>
+              <p className="text-muted-foreground">
+                Crea, edita, revisa, aprueba o rechaza propuestas ciudadanas
+              </p>
             </div>
-            <p className="text-muted-foreground">
-              Revisa, aprueba o rechaza propuestas ciudadanas
-            </p>
+
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
+              <DialogTrigger asChild>
+                <Button data-testid="button-create-proposal">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nueva Propuesta
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingProposal ? "Editar Propuesta" : "Crear Nueva Propuesta"}
+                  </DialogTitle>
+                  <DialogDescription>
+                    Completa los datos de la propuesta ciudadana
+                  </DialogDescription>
+                </DialogHeader>
+
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <FormField
+                      control={form.control}
+                      name="titulo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Título *</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...field}
+                              placeholder="Título de la propuesta (mínimo 10 caracteres)"
+                              data-testid="input-proposal-title"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="descripcion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Descripción *</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder="Descripción breve (mínimo 20 caracteres)"
+                              rows={3}
+                              data-testid="input-proposal-description"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="contenidoCompleto"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Contenido Completo *</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              {...field}
+                              placeholder="Contenido detallado de la propuesta (mínimo 50 caracteres)"
+                              rows={6}
+                              data-testid="input-proposal-content"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="categoria"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Categoría *</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="Ej: Educación, Salud, Economía"
+                                data-testid="input-proposal-category"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="partidoRelacionado"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Partido Relacionado</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                placeholder="Ej: PSOE, PP, Podemos..."
+                                data-testid="input-proposal-party"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Campo hidden para autorId */}
+                    <FormField
+                      control={form.control}
+                      name="autorId"
+                      render={({ field }) => (
+                        <FormItem className="hidden">
+                          <FormControl>
+                            <Input type="hidden" {...field} />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsDialogOpen(false)}
+                        data-testid="button-cancel-proposal"
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        type="submit"
+                        disabled={createOrUpdateMutation.isPending}
+                        data-testid="button-save-proposal"
+                      >
+                        {createOrUpdateMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Guardando...
+                          </>
+                        ) : (
+                          editingProposal ? "Actualizar" : "Crear"
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <Card>
@@ -203,7 +465,7 @@ export default function AdminPropuestas() {
                 </div>
               ) : !proposals || proposals.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  No hay propuestas registradas
+                  No hay propuestas registradas. Crea la primera propuesta.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -211,7 +473,7 @@ export default function AdminPropuestas() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Título</TableHead>
-                        <TableHead>Autor</TableHead>
+                        <TableHead>Categoría</TableHead>
                         <TableHead>Fecha</TableHead>
                         <TableHead>Votos</TableHead>
                         <TableHead>Estado</TableHead>
@@ -226,9 +488,20 @@ export default function AdminPropuestas() {
                               {proposal.titulo}
                             </div>
                           </TableCell>
-                          <TableCell>{proposal.autorId}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{proposal.categoria}</Badge>
+                          </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {format(new Date(proposal.fechaCreacion), "dd MMM yyyy", { locale: es })}
+                            {(() => {
+                              try {
+                                const date = proposal.createdAt ? new Date(proposal.createdAt) : null;
+                                return date && !isNaN(date.getTime())
+                                  ? format(date, "dd MMM yyyy", { locale: es })
+                                  : "Fecha no disponible";
+                              } catch {
+                                return "Fecha no disponible";
+                              }
+                            })()}
                           </TableCell>
                           <TableCell>{proposal.votos || 0}</TableCell>
                           <TableCell>
@@ -247,22 +520,44 @@ export default function AdminPropuestas() {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="en_revision">En Revisión</SelectItem>
+                                <SelectItem value="borrador">Borrador</SelectItem>
+                                <SelectItem value="en_deliberacion">En Deliberación</SelectItem>
+                                <SelectItem value="votacion">En Votación</SelectItem>
                                 <SelectItem value="aprobada">Aprobada</SelectItem>
                                 <SelectItem value="rechazada">Rechazada</SelectItem>
+                                <SelectItem value="archivada">Archivada</SelectItem>
                               </SelectContent>
                             </Select>
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setProposalToDelete(proposal.id)}
-                              disabled={deleteMutation.isPending}
-                              data-testid={`button-delete-${proposal.id}`}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            <div className="flex gap-2">
+                              <Link href="/propuestas">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  data-testid={`button-view-${proposal.id}`}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </Link>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(proposal)}
+                                data-testid={`button-edit-${proposal.id}`}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setProposalToDelete(proposal.id)}
+                                disabled={deleteMutation.isPending}
+                                data-testid={`button-delete-${proposal.id}`}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
