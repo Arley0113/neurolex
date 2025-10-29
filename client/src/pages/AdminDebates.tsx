@@ -51,8 +51,8 @@ export default function AdminDebates() {
 
   // Cargar debates
   const { data: debates = [], isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/debates"],
-    enabled: !!user?.isAdmin,
+    queryKey: ["/api/admin/debates", userId],
+    enabled: !!user?.isAdmin && !!userId,
   });
 
   // Crear/editar debate
@@ -72,7 +72,7 @@ export default function AdminDebates() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates", userId] });
       toast({
         title: editingDebate ? "Debate actualizado" : "Debate creado",
         description: `El debate ha sido ${editingDebate ? "actualizado" : "creado"} correctamente`,
@@ -95,7 +95,7 @@ export default function AdminDebates() {
       return apiRequest("DELETE", `/api/admin/debates/${debateId}?adminId=${userId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates", userId] });
       toast({
         title: "Debate eliminado",
         description: "El debate ha sido eliminado correctamente",
@@ -119,7 +119,7 @@ export default function AdminDebates() {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates", userId] });
       toast({
         title: "Debate actualizado",
         description: "El estado destacado ha sido cambiado",

@@ -171,3 +171,9 @@ Preferred communication style: Simple, everyday language.
 **Testing:**
 - Test e2e completo ejecutado exitosamente
 - Verificado: creación de debates, visualización en listado, navegación a detalle, creación de comentarios, incremento de contadores, otorgamiento de karma
+
+**Bug Fixes Post-Implementación:**
+- Agregado endpoint GET `/api/admin/debates` que faltaba para listar debates en panel admin
+- Corregido problema de invalidación de cache en AdminDebates.tsx (queryKey y invalidaciones ahora coinciden)
+- Creada página `/foro/nuevo` (ForoNuevo.tsx) para crear debates desde vista pública
+- Solo administradores pueden crear debates (validación en backend y frontend con mensajes informativos)

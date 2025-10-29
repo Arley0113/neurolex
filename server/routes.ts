@@ -980,6 +980,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- DEBATES (Admin) ---
 
+  // Obtener todos los debates (Admin)
+  app.get("/api/admin/debates", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const debates = await storage.getAllDebates();
+      res.json(debates);
+    } catch (error) {
+      console.error("Error al obtener debates:", error);
+      res.status(500).json({ error: "Error al obtener debates" });
+    }
+  });
+
   // Crear debate (Admin)
   app.post("/api/admin/debates", isAdmin, async (req: Request, res: Response) => {
     try {

@@ -24,6 +24,7 @@ import Propuestas from "@/pages/Propuestas";
 import Sondeos from "@/pages/Sondeos";
 import Foro from "@/pages/Foro";
 import ForoDetalle from "@/pages/ForoDetalle";
+import ForoNuevo from "@/pages/ForoNuevo";
 import Informacion from "@/pages/Informacion";
 import Contacto from "@/pages/Contacto";
 import NotFound from "@/pages/not-found";
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/noticias" component={Noticias} />
       <Route path="/propuestas" component={Propuestas} />
       <Route path="/sondeos" component={Sondeos} />
+      <Route path="/foro/nuevo" component={ForoNuevo} />
       <Route path="/foro/:id" component={ForoDetalle} />
       <Route path="/foro" component={Foro} />
       
