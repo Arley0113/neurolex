@@ -1,7 +1,7 @@
 // Barra de navegación principal para la plataforma Neurolex
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Bell, Menu, User, Wallet } from "lucide-react";
+import { Bell, Menu, User, Wallet, Shield } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ interface NavbarProps {
     id: string;
     username: string;
     karmaTotal: number;
+    isAdmin?: boolean;
   };
   tokensBalance?: {
     tokensParticipacion: number;
@@ -126,6 +127,14 @@ export function Navbar({ user, tokensBalance }: NavbarProps) {
                         Mi Panel
                       </Link>
                     </DropdownMenuItem>
+                    {user.isAdmin && (
+                      <DropdownMenuItem asChild>
+                        <Link href="/admin" className="cursor-pointer" data-testid="link-admin-panel">
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span className="font-semibold">Panel de Admin</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link href="/monedero" className="cursor-pointer" data-testid="link-wallet">
                         <Wallet className="mr-2 h-4 w-4" />
