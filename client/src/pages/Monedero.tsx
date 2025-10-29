@@ -33,19 +33,19 @@ export default function Monedero() {
   }, [userId, setLocation]);
 
   // Cargar datos del usuario
-  const { data: user } = useQuery({
+  const { data: user } = useQuery<any>({
     queryKey: ["/api/users/me", userId],
     enabled: !!userId,
   });
 
   // Cargar balance de tokens
-  const { data: tokensBalance, isLoading: loadingTokens } = useQuery({
+  const { data: tokensBalance, isLoading: loadingTokens } = useQuery<any>({
     queryKey: ["/api/tokens", userId],
     enabled: !!userId,
   });
 
   // Cargar historial de transacciones
-  const { data: transactions = [], isLoading: loadingTransactions, isError, error } = useQuery({
+  const { data: transactions = [], isLoading: loadingTransactions, isError, error } = useQuery<any[]>({
     queryKey: ["/api/transactions", userId],
     enabled: !!userId,
   });

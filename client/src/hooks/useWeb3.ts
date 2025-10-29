@@ -37,6 +37,11 @@ export function useWeb3() {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
+      // Verificar que window.ethereum existe antes de usarlo
+      if (!window.ethereum) {
+        throw new Error("MetaMask no está disponible");
+      }
+      
       const provider = new BrowserProvider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
       
@@ -84,7 +89,7 @@ export function useWeb3() {
 
   // Escuchar cambios de cuenta en MetaMask
   useEffect(() => {
-    if (!isMetaMaskInstalled()) return;
+    if (!isMetaMaskInstalled() || !window.ethereum) return;
 
     const handleAccountsChanged = (accounts: string[]) => {
       if (accounts.length > 0) {
@@ -94,10 +99,15 @@ export function useWeb3() {
       }
     };
 
-    window.ethereum?.on("accountsChanged", handleAccountsChanged);
+    // Verificar que los métodos existen antes de usarlos
+    if (window.ethereum.on) {
+      window.ethereum.on("accountsChanged", handleAccountsChanged);
+    }
 
     return () => {
-      window.ethereum?.removeListener("accountsChanged", handleAccountsChanged);
+      if (window.ethereum?.removeListener) {
+        window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+      }
     };
   }, []);
 
