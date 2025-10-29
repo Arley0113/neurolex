@@ -21,6 +21,7 @@ import Noticias from "@/pages/Noticias";
 import NoticiaDetalle from "@/pages/NoticiaDetalle";
 import Propuestas from "@/pages/Propuestas";
 import Sondeos from "@/pages/Sondeos";
+import Foro from "@/pages/Foro";
 import Informacion from "@/pages/Informacion";
 import Contacto from "@/pages/Contacto";
 import NotFound from "@/pages/not-found";
@@ -52,6 +53,7 @@ function Router() {
       <Route path="/noticias" component={Noticias} />
       <Route path="/propuestas" component={Propuestas} />
       <Route path="/sondeos" component={Sondeos} />
+      <Route path="/foro" component={Foro} />
       
       {/* Información y contacto */}
       <Route path="/informacion" component={Informacion} />

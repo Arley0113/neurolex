@@ -36,6 +36,7 @@ export function Navbar({ user, tokensBalance }: NavbarProps) {
     { href: "/noticias", label: "Noticias" },
     { href: "/propuestas", label: "Propuestas" },
     { href: "/sondeos", label: "Sondeos" },
+    { href: "/foro", label: "Foro" },
     { href: "/informacion", label: "Información" },
   ];
 
