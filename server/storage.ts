@@ -84,6 +84,8 @@ export interface IStorage {
   getAllPolls(): Promise<Poll[]>;
   getPollById(id: string): Promise<Poll | undefined>;
   createPoll(pollData: InsertPoll): Promise<Poll>;
+  updatePoll(id: string, data: Partial<Poll>): Promise<Poll | undefined>;
+  deletePoll(id: string): Promise<void>;
   getPollOptions(pollId: string): Promise<PollOption[]>;
   createPollOption(optionData: InsertPollOption): Promise<PollOption>;
   vote(userId: string, pollId: string, optionId: string): Promise<void>;
@@ -347,6 +349,23 @@ export class DatabaseStorage implements IStorage {
       .values(pollData)
       .returning();
     return poll;
+  }
+
+  async updatePoll(id: string, data: Partial<Poll>): Promise<Poll | undefined> {
+    const [poll] = await db
+      .update(polls)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(polls.id, id))
+      .returning();
+    return poll || undefined;
+  }
+
+  async deletePoll(id: string): Promise<void> {
+    // Primero eliminar opciones y votos relacionados
+    await db.delete(votes).where(eq(votes.pollId, id));
+    await db.delete(pollOptions).where(eq(pollOptions.pollId, id));
+    // Luego eliminar el sondeo
+    await db.delete(polls).where(eq(polls.id, id));
   }
 
   async getPollOptions(pollId: string): Promise<PollOption[]> {
