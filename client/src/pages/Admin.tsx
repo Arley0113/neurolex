@@ -28,17 +28,17 @@ export default function Admin() {
   }, [userId, setLocation]);
 
   // Cargar datos del usuario
-  const { data: user, isLoading: loadingUser } = useQuery({
+  const { data: user, isLoading: loadingUser } = useQuery<any>({
     queryKey: ["/api/users/me", userId],
     enabled: !!userId,
   });
 
   // Cargar estadísticas (requiere ser admin)
-  const { data: stats, isLoading: loadingStats, isError } = useQuery({
+  const { data: stats, isLoading: loadingStats, isError } = useQuery<any>({
     queryKey: ["/api/admin/stats"],
     queryFn: async () => {
       const res = await fetch(`/api/admin/stats?adminId=${userId}`);
-      if (!res.ok) throw new Error("No tienes permisos de administrador");
+      if (!res.ok) throw new Error("Error al cargar estadísticas");
       return res.json();
     },
     enabled: !!userId,
