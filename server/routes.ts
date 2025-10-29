@@ -323,9 +323,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // 8. Registrar transacción con txHash para prevenir duplicados
       await storage.createTokenTransaction({
         userId,
-        tokenType: "tokensApoyo",
-        amount: taAmount,
-        transactionType: "comprado",
+        tipoToken: "TA",
+        cantidad: taAmount,
+        tipoTransaccion: "comprado",
         descripcion: `Compra de ${taAmount} TA por ${ethAmount} ETH`,
         relacionadoId: txHash, // Guardamos el hash completo
       });
@@ -558,9 +558,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Registrar transacción
       await storage.createTokenTransaction({
         userId,
-        tokenType: "tokensApoyo",
-        amount: -amount, // Negativo porque se gasta
-        transactionType: "gastado_apoyo",
+        tipoToken: "TA",
+        cantidad: -amount, // Negativo porque se gasta
+        tipoTransaccion: "gastado_apoyo",
         descripcion: `Donación de ${amount} TA a propuesta: ${propuesta.titulo}`,
         relacionadoId: proposalId,
       });
