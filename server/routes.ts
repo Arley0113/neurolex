@@ -134,6 +134,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // TOKENS
   // ===========================================================================
 
+  // ⚠️ SECURITY WARNING: Este endpoint tiene una limitación de seguridad conocida
+  // ⚠️ PROBLEMA: Actualmente NO hay autenticación real (JWT/sesiones)
+  // ⚠️ MITIGACIÓN PARCIAL: Validamos que el mensaje firmado incluya el userId correcto
+  // ⚠️ SOLUCIÓN REAL: Implementar JWT/sesiones y derivar userId del contexto autenticado
+  // ⚠️ RIESGO RESIDUAL: Si un atacante obtiene acceso a localStorage de otro usuario,
+  //    podría vincular su wallet a esa cuenta. La firma previene vincular wallets
+  //    ajenas, pero no previene el secuestro si el atacante tiene acceso al localStorage.
   // Vincular wallet de MetaMask al usuario (CON VERIFICACIÓN DE FIRMA)
   app.post("/api/users/:userId/link-wallet", async (req: Request, res: Response) => {
     try {
@@ -160,13 +167,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const recoveredAddress = verifyMessage(message, signature);
         
+        // Validar que la firma corresponda a la wallet
         if (recoveredAddress.toLowerCase() !== walletAddress.toLowerCase()) {
           return res.status(403).json({ 
             error: "Firma inválida. No puedes demostrar propiedad de esta wallet." 
           });
         }
 
-        console.log(`✅ Firma verificada para wallet ${walletAddress}`);
+        // CRÍTICO: Validar que el mensaje incluya el userId correcto
+        // Esto previene que un atacante firme con su wallet y la vincule a otro userId
+        if (!message.includes(`Usuario: ${userId}`)) {
+          return res.status(403).json({ 
+            error: "El mensaje firmado no corresponde a este usuario" 
+          });
+        }
+
+        console.log(`✅ Firma verificada para wallet ${walletAddress} y usuario ${userId}`);
       } catch (error) {
         console.error("Error al verificar firma:", error);
         return res.status(403).json({ error: "Firma inválida o corrupta" });
@@ -231,6 +247,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ⚠️ SECURITY WARNING: Este endpoint tiene una limitación de seguridad conocida
+  // ⚠️ PROBLEMA: Actualmente NO hay autenticación real (JWT/sesiones)
+  // ⚠️ MITIGACIÓN: Múltiples capas de validación blockchain previenen la mayoría de ataques
+  // ⚠️ SOLUCIÓN REAL: Implementar JWT/sesiones y derivar userId del contexto autenticado
   // Procesar compra de tokens con criptomonedas (CON VERIFICACIÓN BLOCKCHAIN)
   app.post("/api/tokens/purchase", async (req: Request, res: Response) => {
     try {

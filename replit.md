@@ -35,11 +35,118 @@ Preferred communication style: Simple, everyday language.
 - **Backend de transacciones**: Tabla `token_transactions`, rutas API `GET /api/transactions/:userId`
 - **Tipos globales**: Definiciones TypeScript para `Window.ethereum` (Ethers.js)
 
+### Sistema de Donaciones Descentralizado con Blockchain (Octubre 29, 2025)
+
+**Implementación Completa:**
+- **Configuración blockchain** (`shared/blockchain-config.ts`): Sepolia testnet, conversión 1 TA = 0.001 ETH, wallet plataforma
+- **Verificación blockchain** (`server/blockchain-verifier.ts`): Verificación on-chain completa usando ethers.js v6
+- **Página ComprarTokens** (`/comprar-tokens`): Interfaz para comprar TA con MetaMask, calculadora de conversión, firma criptográfica
+- **Sistema de donaciones**: DonateModal para donar a propuestas, botón en cada propuesta, backend procesa donaciones
+- **Wallet vinculada**: Campo `walletAddress` en users con unique constraint, vinculación automática al conectar MetaMask
+
+**Seguridad Multicapa Implementada:**
+
+1. **Firma Criptográfica (Capa 1):**
+   - Usuario firma mensaje con MetaMask al conectar wallet: "Vincular wallet a Neurolex\nUsuario: {userId}\nWallet: {address}\nFecha: {timestamp}"
+   - Backend verifica firma con ethers.verifyMessage
+   - Backend valida que mensaje incluya userId correcto
+   - Solo el dueño de la wallet puede vincularla (requiere clave privada)
+
+2. **Wallet Vinculada Única (Capa 2):**
+   - Constraint UNIQUE en users.walletAddress
+   - Una wallet solo puede pertenecer a un usuario
+   - Previene múltiples cuentas con misma wallet
+
+3. **Verificación On-Chain Sender (Capa 3):**
+   - tx.from debe coincidir con user.walletAddress vinculada
+   - Validación en blockchain real usando ethers.JsonRpcProvider
+   - Previene uso de txHash de otros usuarios
+
+4. **Unicidad de txHash (Capa 4):**
+   - txHash se guarda en tokenTransactions.relacionadoId
+   - Previene procesamiento duplicado de misma transacción
+   - Verifica que txHash no fue procesado antes
+
+5. **Validación de Monto y Receptor (Capa 5):**
+   - tx.to debe ser platformWallet (0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb)
+   - tx.value debe coincidir con ethAmount (±0.0001 ETH tolerancia por fees)
+   - tx.status debe ser success con al menos 2 confirmaciones
+
+**⚠️⚠️⚠️ ADVERTENCIAS DE SEGURIDAD CRÍTICAS ⚠️⚠️⚠️**
+
+**🔴 LIMITACIÓN CRÍTICA: AUTENTICACIÓN INSEGURA - NO USAR EN PRODUCCIÓN 🔴**
+
+⚠️ **PROBLEMA FUNDAMENTAL:**
+- La aplicación usa localStorage.getItem("userId") SIN autenticación real (JWT/sesiones)
+- TODOS los endpoints confían ciegamente en el userId recibido del cliente
+- NO hay manera de verificar que el usuario autenticado sea realmente quien dice ser
+
+⚠️ **VECTOR DE ATAQUE PRINCIPAL:**
+Un atacante puede:
+1. Manipular localStorage.setItem("userId", "ID_DE_VICTIMA")
+2. Firmar un mensaje con SU PROPIA wallet que incluya "Usuario: ID_DE_VICTIMA"
+3. Enviar firma válida al backend vinculando SU wallet a la cuenta de la víctima
+4. Realizar compras en nombre de la víctima
+5. Gastar tokens de la víctima
+6. Desviar fondos
+
+⚠️ **POR QUÉ LAS "MITIGACIONES" NO SON SUFICIENTES:**
+1. ✅ Firma criptográfica: Sí previene vincular wallets **ajenas** (sin clave privada de la wallet)
+2. ❌ Validación de userId en mensaje: NO previene nada porque el atacante PUEDE crear un mensaje nuevo con userId de víctima y firmarlo con su wallet
+3. ✅ Verificación blockchain: Sí previene usar txHash de otros (valida tx.from)
+4. ❌ Constraint UNIQUE: NO previene nada porque el atacante puede sobrescribir la wallet vinculada
+
+⚠️ **ESCENARIOS DE ATAQUE EXITOSOS:**
+1. **XSS Attack:** Script malicioso lee userId de localStorage, crea firma falsa, secuestra cuenta
+2. **Browser Extension:** Extensión maliciosa puede leer/escribir localStorage de cualquier sitio
+3. **Shared Computer:** Otro usuario puede abrir DevTools y cambiar localStorage
+4. **Man-in-the-Middle:** Intercepta requests y cambia userId en parámetros (sin HTTPS estricto)
+5. **Client Tampering:** Cualquiera puede modificar el código JS del cliente y enviar requests directos
+
+⚠️ **LO QUE SÍ ESTÁ PROTEGIDO:**
+✅ Usar txHash de transacción de otro usuario (verificación blockchain real)
+✅ Falsificar transacciones blockchain (validación on-chain)
+✅ Double spending de misma transacción (unicidad de txHash)
+✅ Manipular montos enviados (validación estricta de tx.value)
+
+⚠️ **LO QUE NO ESTÁ PROTEGIDO:**
+❌ Secuestro de cuenta (cambiar userId en localStorage)
+❌ Vinculación maliciosa de wallet a cuenta ajena
+❌ Compras no autorizadas en nombre de otro usuario
+❌ Gasto de tokens de otro usuario
+❌ Session hijacking
+❌ CSRF attacks
+❌ Privilege escalation
+
+⚠️ **SOLUCIÓN RECOMENDADA PARA PRODUCCIÓN:**
+1. Implementar autenticación JWT o sesiones robustas con cookies httpOnly
+2. Middleware de autenticación que derive userId del token/sesión autenticado
+3. Rechazar cualquier userId en parámetros/body, usar solo el userId autenticado
+4. Implementar rate limiting y monitoreo de actividad sospechosa
+5. Agregar 2FA para operaciones sensibles (vincular wallet, comprar tokens grandes)
+6. Auditoría de seguridad profesional antes de producción
+
+⚠️ **VECTORES DE ATAQUE BLOQUEADOS:**
+✅ Replay attack directo (txHash de otro usuario)
+✅ Vincular wallet ajena sin clave privada
+✅ Double spending (txHash único)
+✅ Amount manipulation (validación estricta)
+✅ Wrong recipient (valida platformWallet)
+
+⚠️ **VECTORES DE ATAQUE RESIDUALES:**
+❌ Secuestro de cuenta si atacante tiene acceso a localStorage
+❌ Session hijacking (sin cookies httpOnly/seguras)
+❌ CSRF (sin tokens CSRF)
+
+**IMPORTANTE:** Este sistema es adecuado para desarrollo y demostración, pero **NO está listo para producción** sin implementar autenticación robusta.
+
 ### Rutas API Actualizadas
 - Todas las rutas de usuario ahora usan parámetros de URL consistentes:
   - `GET /api/users/me/:userId` (antes era query parameter)
   - `GET /api/tokens/:userId`
   - `GET /api/transactions/:userId`
+  - `POST /api/users/:userId/link-wallet` (vincula wallet con firma criptográfica)
+  - `POST /api/tokens/purchase` (compra tokens con verificación blockchain multicapa)
 
 ## System Architecture
 
