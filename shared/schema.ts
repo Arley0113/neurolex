@@ -34,6 +34,9 @@ export const users = pgTable("users", {
   // Nivel de usuario (básico o verificado)
   nivel: nivelUsuarioEnum("nivel").notNull().default("basico"),
   
+  // Rol de administrador
+  isAdmin: boolean("is_admin").notNull().default(false),
+  
   // Afinidad política para personalización del feed
   afinidadPolitica: text("afinidad_politica"), // nombre del partido o "Ninguno/Otros"
   

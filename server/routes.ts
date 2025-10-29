@@ -512,6 +512,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===========================================================================
+  // ADMINISTRACIÓN
+  // ===========================================================================
+
+  // Middleware para verificar si el usuario es administrador
+  const isAdmin = async (req: Request, res: Response, next: Function) => {
+    try {
+      const userId = req.body.adminId || req.params.adminId || req.query.adminId;
+      if (!userId) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+
+      const user = await storage.getUser(userId as string);
+      if (!user || !user.isAdmin) {
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+      }
+
+      next();
+    } catch (error) {
+      console.error("Error en middleware de admin:", error);
+      res.status(500).json({ error: "Error al verificar permisos" });
+    }
+  };
+
+  // --- NOTICIAS (Admin) ---
+
+  // Crear noticia (Admin)
+  app.post("/api/admin/news", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { adminId, ...newsData } = req.body;
+      const validation = validateRequest(insertNewsSchema, newsData);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const news = await storage.createNews(validation.data!);
+      res.status(201).json(news);
+    } catch (error) {
+      console.error("Error al crear noticia:", error);
+      res.status(500).json({ error: "Error al crear noticia" });
+    }
+  });
+
+  // Editar noticia (Admin)
+  app.put("/api/admin/news/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { adminId, ...newsData } = req.body;
+      
+      const updated = await storage.updateNews(id, newsData);
+      if (!updated) {
+        return res.status(404).json({ error: "Noticia no encontrada" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error al actualizar noticia:", error);
+      res.status(500).json({ error: "Error al actualizar noticia" });
+    }
+  });
+
+  // Eliminar noticia (Admin)
+  app.delete("/api/admin/news/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteNews(id);
+      res.json({ success: true, message: "Noticia eliminada correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar noticia:", error);
+      res.status(500).json({ error: "Error al eliminar noticia" });
+    }
+  });
+
+  // --- PROPUESTAS (Admin) ---
+
+  // Cambiar estado de propuesta (Admin)
+  app.put("/api/admin/proposals/:id/status", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { estado } = req.body;
+
+      const updated = await storage.updateProposal(id, { estado });
+      if (!updated) {
+        return res.status(404).json({ error: "Propuesta no encontrada" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error al actualizar estado de propuesta:", error);
+      res.status(500).json({ error: "Error al actualizar estado de propuesta" });
+    }
+  });
+
+  // Eliminar propuesta (Admin)
+  app.delete("/api/admin/proposals/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteProposal(id);
+      res.json({ success: true, message: "Propuesta eliminada correctamente" });
+    } catch (error) {
+      console.error("Error al eliminar propuesta:", error);
+      res.status(500).json({ error: "Error al eliminar propuesta" });
+    }
+  });
+
+  // --- SONDEOS (Admin) ---
+
+  // Crear sondeo completo con opciones (Admin)
+  app.post("/api/admin/polls", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { adminId, opciones, ...pollData } = req.body;
+      
+      // Crear el sondeo
+      const poll = await storage.createPoll(pollData);
+      
+      // Crear las opciones
+      if (opciones && Array.isArray(opciones)) {
+        for (const opcion of opciones) {
+          await storage.createPollOption({
+            pollId: poll.id,
+            texto: opcion,
+          });
+        }
+      }
+
+      res.status(201).json(poll);
+    } catch (error) {
+      console.error("Error al crear sondeo:", error);
+      res.status(500).json({ error: "Error al crear sondeo" });
+    }
+  });
+
+  // --- USUARIOS (Admin) ---
+
+  // Obtener todos los usuarios (Admin)
+  app.get("/api/admin/users", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Remover contraseñas
+      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error) {
+      console.error("Error al obtener usuarios:", error);
+      res.status(500).json({ error: "Error al obtener usuarios" });
+    }
+  });
+
+  // Cambiar nivel o rol de admin de un usuario (Admin)
+  app.put("/api/admin/users/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { nivel, isAdmin: setAdmin } = req.body;
+      
+      const updateData: any = {};
+      if (nivel) updateData.nivel = nivel;
+      if (setAdmin !== undefined) updateData.isAdmin = setAdmin;
+
+      const updated = await storage.updateUser(id, updateData);
+      if (!updated) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
+      }
+
+      const { password, ...userWithoutPassword } = updated;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error al actualizar usuario:", error);
+      res.status(500).json({ error: "Error al actualizar usuario" });
+    }
+  });
+
+  // Estadísticas generales (Admin)
+  app.get("/api/admin/stats", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const [users, news, proposals, polls] = await Promise.all([
+        storage.getAllUsers(),
+        storage.getAllNews(),
+        storage.getAllProposals(),
+        storage.getAllPolls(),
+      ]);
+
+      res.json({
+        totalUsers: users.length,
+        totalNews: news.length,
+        totalProposals: proposals.length,
+        totalPolls: polls.length,
+        verifiedUsers: users.filter(u => u.nivel === "verificado").length,
+        adminUsers: users.filter(u => u.isAdmin).length,
+      });
+    } catch (error) {
+      console.error("Error al obtener estadísticas:", error);
+      res.status(500).json({ error: "Error al obtener estadísticas" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

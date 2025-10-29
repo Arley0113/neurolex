@@ -11,6 +11,7 @@ import Register from "@/pages/Register";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Monedero from "@/pages/Monedero";
+import Admin from "@/pages/Admin";
 import Noticias from "@/pages/Noticias";
 import Propuestas from "@/pages/Propuestas";
 import Sondeos from "@/pages/Sondeos";
@@ -31,6 +32,9 @@ function Router() {
       {/* Dashboard de usuario */}
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/monedero" component={Monedero} />
+      
+      {/* Panel de administrador */}
+      <Route path="/admin" component={Admin} />
       
       {/* Contenido principal */}
       <Route path="/noticias" component={Noticias} />

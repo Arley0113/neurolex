@@ -42,6 +42,7 @@ import { eq, desc, and, sql } from "drizzle-orm";
 // Interfaz de almacenamiento con todos los métodos CRUD necesarios
 export interface IStorage {
   // Usuarios
+  getAllUsers(): Promise<User[]>;
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
@@ -102,6 +103,11 @@ export interface IStorage {
 // Implementación con PostgreSQL usando Drizzle ORM
 export class DatabaseStorage implements IStorage {
   // === USUARIOS ===
+  async getAllUsers(): Promise<User[]> {
+    const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
+    return allUsers;
+  }
+
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
