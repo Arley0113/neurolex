@@ -14,6 +14,9 @@ import Monedero from "@/pages/Monedero";
 import ComprarTokens from "@/pages/ComprarTokens";
 import Admin from "@/pages/Admin";
 import AdminNoticias from "@/pages/AdminNoticias";
+import AdminPropuestas from "@/pages/AdminPropuestas";
+import AdminSondeos from "@/pages/AdminSondeos";
+import AdminUsuarios from "@/pages/AdminUsuarios";
 import Noticias from "@/pages/Noticias";
 import Propuestas from "@/pages/Propuestas";
 import Sondeos from "@/pages/Sondeos";
@@ -39,6 +42,9 @@ function Router() {
       {/* Panel de administrador */}
       <Route path="/admin" component={Admin} />
       <Route path="/admin/noticias" component={AdminNoticias} />
+      <Route path="/admin/propuestas" component={AdminPropuestas} />
+      <Route path="/admin/sondeos" component={AdminSondeos} />
+      <Route path="/admin/usuarios" component={AdminUsuarios} />
       
       {/* Contenido principal */}
       <Route path="/noticias" component={Noticias} />
