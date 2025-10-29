@@ -978,6 +978,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Editar sondeo (Admin)
+  app.put("/api/admin/polls/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { adminId, ...pollData } = req.body;
+      
+      const poll = await storage.updatePoll(id, pollData);
+      if (!poll) {
+        return res.status(404).json({ error: "Sondeo no encontrado" });
+      }
+
+      res.json(poll);
+    } catch (error) {
+      console.error("Error al editar sondeo:", error);
+      res.status(500).json({ error: "Error al editar sondeo" });
+    }
+  });
+
+  // Eliminar sondeo (Admin)
+  app.delete("/api/admin/polls/:id", isAdmin, async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      await storage.deletePoll(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error al eliminar sondeo:", error);
+      res.status(500).json({ error: "Error al eliminar sondeo" });
+    }
+  });
+
   // --- DEBATES (Admin) ---
 
   // Obtener todos los debates (Admin)
