@@ -12,6 +12,22 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (October 29, 2025)
 
+### Panel de Administración (Admin Dashboard)
+- **Campo isAdmin agregado**: Campo booleano `isAdmin` en tabla `users` para permisos de administrador
+- **Dashboard Principal** (`/admin`): Estadísticas generales del sistema (usuarios totales, noticias, propuestas, sondeos, usuarios verificados y admins)
+- **Gestión de Noticias** (`/admin/noticias`): CRUD completo con modal de formulario, tabla de noticias, acciones de editar/eliminar
+- **Middleware de Admin**: Verificación de permisos en todas las rutas de administrador usando `isAdmin` middleware
+- **Rutas API de Admin**:
+  - `POST/PUT/DELETE /api/admin/news/:id` - CRUD de noticias (requiere adminId)
+  - `PUT /api/admin/proposals/:id/status` - Cambiar estado de propuestas
+  - `DELETE /api/admin/proposals/:id` - Eliminar propuestas
+  - `POST /api/admin/polls` - Crear sondeos con opciones
+  - `GET /api/admin/users` - Listar todos los usuarios
+  - `PUT /api/admin/users/:id` - Cambiar nivel o rol de admin
+  - `GET /api/admin/stats?adminId={userId}` - Estadísticas generales
+- **Protección de rutas**: Solo usuarios con `isAdmin=true` pueden acceder al panel
+- **UI de Admin**: Cards de navegación a secciones, mensaje de acceso denegado para no-admins
+
 ### Monedero Integrado (Integrated Wallet)
 - **Página de Monedero completa** (`/monedero`): Visualización de saldos TP, TA, TGR con tarjetas grandes
 - **Historial de transacciones**: Tabla completa con fecha, tipo de token, cantidad (+/-), tipo de transacción, descripción
@@ -72,6 +88,8 @@ Preferred communication style: Simple, everyday language.
 - Bcrypt for password hashing (6 rounds)
 - Session-based authentication (no explicit session store visible in current implementation)
 - User levels: "basico" (basic) and "verificado" (verified)
+- Admin role: Users with `isAdmin=true` have access to admin panel
+- Admin middleware: Validates adminId parameter in all admin routes
 
 **Data Validation:**
 - Zod schemas for runtime validation
@@ -92,13 +110,14 @@ Preferred communication style: Simple, everyday language.
 - Relational data modeling with foreign keys and relations
 
 **Data Models:**
-- **Users:** Authentication, profile data, political affinity, karma system, gamification level
+- **Users:** Authentication, profile data, political affinity, karma system, gamification level, admin flag (`isAdmin`)
 - **Tokens System:** Three token types (TP - Participation, TA - Support, TGR - Governance) with balance tracking
 - **Token Transactions:** Complete transaction history tracking (token type, amount, transaction type, description, related entity ID, timestamp)
 - **Content Models:** News articles (with political party relationships), citizen proposals, polls with options and votes
 - **Engagement:** Comments, votes, karma history
 - **Gamification:** Badges and user badge assignments
 - **Communication:** Contact form submissions
+- **Admin Features:** Full CRUD on news, proposal moderation, poll creation, user management
 
 **Key Enumerations:**
 - User levels, token types, proposal states, news types defined as PostgreSQL enums
