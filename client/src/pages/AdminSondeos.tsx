@@ -12,6 +12,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Form,
   FormControl,
   FormDescription,
@@ -31,7 +38,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation, Link } from "wouter";
-import { BarChart3, Loader2, Plus, X, AlertCircle, ArrowLeft, Eye } from "lucide-react";
+import { BarChart3, Loader2, Plus, X, AlertCircle, ArrowLeft, Eye, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -48,6 +55,8 @@ export default function AdminSondeos() {
   const { toast } = useToast();
   const userId = localStorage.getItem("userId");
   const [options, setOptions] = useState<string[]>(["", ""]);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPoll, setEditingPoll] = useState<any>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -99,6 +108,52 @@ export default function AdminSondeos() {
     },
   });
 
+  const updatePollMutation = useMutation({
+    mutationFn: async (data: { id: string } & Partial<PollFormData>) => {
+      const { id, ...pollData } = data;
+      return apiRequest("PUT", `/api/admin/polls/${id}`, {
+        adminId: userId,
+        ...pollData,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
+      toast({
+        title: "Sondeo actualizado",
+        description: "El sondeo ha sido actualizado exitosamente",
+      });
+      setIsEditDialogOpen(false);
+      setEditingPoll(null);
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo actualizar el sondeo",
+      });
+    },
+  });
+
+  const deletePollMutation = useMutation({
+    mutationFn: async (pollId: string) => {
+      return apiRequest("DELETE", `/api/admin/polls/${pollId}?adminId=${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
+      toast({
+        title: "Sondeo eliminado",
+        description: "El sondeo ha sido eliminado exitosamente",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "No se pudo eliminar el sondeo",
+      });
+    },
+  });
+
   const onSubmit = (data: PollFormData) => {
     const validOptions = options.filter((opt) => opt.trim() !== "");
     
@@ -131,6 +186,25 @@ export default function AdminSondeos() {
     const newOptions = [...options];
     newOptions[index] = value;
     setOptions(newOptions);
+  };
+
+  const handleEdit = (poll: any) => {
+    setEditingPoll(poll);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (pollId: string) => {
+    if (confirm("¿Estás seguro de que deseas eliminar este sondeo?")) {
+      deletePollMutation.mutate(pollId);
+    }
+  };
+
+  const handleUpdatePoll = (data: PollFormData) => {
+    if (!editingPoll) return;
+    updatePollMutation.mutate({
+      id: editingPoll.id,
+      ...data,
+    });
   };
 
   if (!user) {
@@ -327,29 +401,50 @@ export default function AdminSondeos() {
                       <Card key={poll.id} className="hover-elevate">
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between gap-2">
-                            <CardTitle className="text-base">{poll.titulo}</CardTitle>
-                            <div className="flex gap-2">
+                            <CardTitle className="text-base line-clamp-1">{poll.titulo}</CardTitle>
+                            <div className="flex gap-2 flex-shrink-0">
                               <Badge variant={poll.activo ? "default" : "secondary"}>
                                 {poll.activo ? "Activo" : "Cerrado"}
                               </Badge>
-                              <Link href="/sondeos">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  data-testid={`button-view-poll-${poll.id}`}
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </Button>
-                              </Link>
                             </div>
                           </div>
                         </CardHeader>
-                        <CardContent className="space-y-2">
+                        <CardContent className="space-y-3">
                           <p className="text-sm text-muted-foreground line-clamp-2">
                             {poll.descripcion}
                           </p>
                           <div className="text-xs text-muted-foreground">
                             Creado: {format(new Date(poll.fechaCreacion), "dd MMM yyyy", { locale: es })}
+                          </div>
+                          <div className="flex gap-2">
+                            <Link href="/sondeos" className="flex-1">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                data-testid={`button-view-poll-${poll.id}`}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Ver
+                              </Button>
+                            </Link>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEdit(poll)}
+                              data-testid={`button-edit-poll-${poll.id}`}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDelete(poll.id)}
+                              disabled={deletePollMutation.isPending}
+                              data-testid={`button-delete-poll-${poll.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -363,6 +458,105 @@ export default function AdminSondeos() {
       </main>
 
       <Footer />
+
+      {/* Dialog de edición */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Editar Sondeo</DialogTitle>
+            <DialogDescription>
+              Modifica los detalles del sondeo
+            </DialogDescription>
+          </DialogHeader>
+          {editingPoll && (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleUpdatePoll)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="titulo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título del Sondeo</FormLabel>
+                      <FormControl>
+                        <Input 
+                          {...field} 
+                          defaultValue={editingPoll.titulo}
+                          data-testid="input-edit-poll-title" 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="descripcion"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descripción</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          {...field}
+                          defaultValue={editingPoll.descripcion}
+                          className="resize-none"
+                          rows={3}
+                          data-testid="input-edit-poll-description"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="fechaCierre"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fecha de Cierre (Opcional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="date" 
+                          {...field}
+                          defaultValue={editingPoll.fechaCierre ? editingPoll.fechaCierre.split('T')[0] : ""}
+                          data-testid="input-edit-poll-close-date" 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="flex gap-2 justify-end">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsEditDialogOpen(false)}
+                    data-testid="button-cancel-edit"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={updatePollMutation.isPending}
+                    data-testid="button-submit-edit"
+                  >
+                    {updatePollMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      "Guardar Cambios"
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
