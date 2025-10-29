@@ -7,8 +7,24 @@ import { Users, Vote, TrendingUp, Coins, Award, Shield, MessageSquare, BarChart3
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import evotingBannerUrl from "@assets/Evoting banner_1761708286562.png";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Home() {
+  // Obtener userId del localStorage
+  const userId = localStorage.getItem("userId");
+
+  // Cargar datos del usuario si está autenticado
+  const { data: user } = useQuery({
+    queryKey: ["/api/users/me", userId],
+    enabled: !!userId,
+  });
+
+  // Cargar balance de tokens si está autenticado
+  const { data: tokensBalance } = useQuery({
+    queryKey: ["/api/tokens", userId],
+    enabled: !!userId,
+  });
+
   const features = [
     {
       icon: Vote,
@@ -66,7 +82,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <Navbar user={user} tokensBalance={tokensBalance} />
       
       {/* Hero Section */}
       <section className="relative min-h-[600px] md:min-h-[700px] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary/20 via-background to-background">

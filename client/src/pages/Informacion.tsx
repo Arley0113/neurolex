@@ -6,8 +6,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Shield, Users, TrendingUp, Coins, Award, Vote, MessageSquare, BarChart3, CheckCircle } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Informacion() {
+  // Obtener userId del localStorage
+  const userId = localStorage.getItem("userId");
+
+  // Cargar datos del usuario si está autenticado
+  const { data: user } = useQuery({
+    queryKey: ["/api/users/me", userId],
+    enabled: !!userId,
+  });
+
+  // Cargar balance de tokens si está autenticado
+  const { data: tokensBalance } = useQuery({
+    queryKey: ["/api/tokens", userId],
+    enabled: !!userId,
+  });
+
   const caracteristicas = [
     {
       icon: Vote,
@@ -98,7 +114,7 @@ export default function Informacion() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <Navbar user={user} tokensBalance={tokensBalance} />
 
       <main className="flex-1 bg-background">
         {/* Hero Section */}
