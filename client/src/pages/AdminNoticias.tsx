@@ -28,7 +28,7 @@ export default function AdminNoticias() {
   const [formData, setFormData] = useState({
     titulo: "",
     contenido: "",
-    tipo: "politica" as "politica" | "legislacion" | "eventos" | "partidos",
+    tipo: "nacional" as "nacional" | "internacional" | "economia" | "social" | "tecnologia" | "otro",
     partidoAsociado: "",
     imagenUrl: "",
   });
@@ -134,7 +134,7 @@ export default function AdminNoticias() {
     setFormData({
       titulo: "",
       contenido: "",
-      tipo: "politica",
+      tipo: "nacional",
       partidoAsociado: "",
       imagenUrl: "",
     });
@@ -229,10 +229,12 @@ export default function AdminNoticias() {
                           <SelectValue placeholder="Selecciona tipo" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="politica">Política</SelectItem>
-                          <SelectItem value="legislacion">Legislación</SelectItem>
-                          <SelectItem value="eventos">Eventos</SelectItem>
-                          <SelectItem value="partidos">Partidos</SelectItem>
+                          <SelectItem value="nacional">Nacional</SelectItem>
+                          <SelectItem value="internacional">Internacional</SelectItem>
+                          <SelectItem value="economia">Economía</SelectItem>
+                          <SelectItem value="social">Social</SelectItem>
+                          <SelectItem value="tecnologia">Tecnología</SelectItem>
+                          <SelectItem value="otro">Otro</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
