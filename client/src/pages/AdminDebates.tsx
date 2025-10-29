@@ -125,8 +125,9 @@ export default function AdminDebates() {
         adminId: userId,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates", userId] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/debates", userId] });
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/debates", userId] });
       toast({
         title: "Debate actualizado",
         description: "El estado destacado ha sido cambiado",
