@@ -151,6 +151,7 @@ export default function Propuestas() {
                       {...propuesta}
                       autorNombre={propuesta.autorNombre || "Usuario"}
                       numComentarios={0}
+                      userTokensBalance={tokensBalance}
                     />
                   ))}
                 </div>
@@ -174,9 +175,15 @@ export default function Propuestas() {
             <TabsContent value="en_deliberacion">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {propuestas
-                  .filter((p) => p.estado === "en_deliberacion")
-                  .map((propuesta) => (
-                    <ProposalCard key={propuesta.id} {...propuesta} />
+                  .filter((p: any) => p.estado === "en_deliberacion")
+                  .map((propuesta: any) => (
+                    <ProposalCard 
+                      key={propuesta.id} 
+                      {...propuesta}
+                      autorNombre={propuesta.autorNombre || "Usuario"}
+                      numComentarios={0}
+                      userTokensBalance={tokensBalance}
+                    />
                   ))}
               </div>
             </TabsContent>
@@ -184,9 +191,15 @@ export default function Propuestas() {
             <TabsContent value="votacion">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {propuestas
-                  .filter((p) => p.estado === "votacion")
-                  .map((propuesta) => (
-                    <ProposalCard key={propuesta.id} {...propuesta} />
+                  .filter((p: any) => p.estado === "votacion")
+                  .map((propuesta: any) => (
+                    <ProposalCard 
+                      key={propuesta.id} 
+                      {...propuesta}
+                      autorNombre={propuesta.autorNombre || "Usuario"}
+                      numComentarios={0}
+                      userTokensBalance={tokensBalance}
+                    />
                   ))}
               </div>
             </TabsContent>
@@ -194,9 +207,15 @@ export default function Propuestas() {
             <TabsContent value="aprobada">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {propuestas
-                  .filter((p) => p.estado === "aprobada")
-                  .map((propuesta) => (
-                    <ProposalCard key={propuesta.id} {...propuesta} />
+                  .filter((p: any) => p.estado === "aprobada")
+                  .map((propuesta: any) => (
+                    <ProposalCard 
+                      key={propuesta.id} 
+                      {...propuesta}
+                      autorNombre={propuesta.autorNombre || "Usuario"}
+                      numComentarios={0}
+                      userTokensBalance={tokensBalance}
+                    />
                   ))}
               </div>
             </TabsContent>
@@ -204,9 +223,15 @@ export default function Propuestas() {
             <TabsContent value="rechazada">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {propuestas
-                  .filter((p) => p.estado === "rechazada")
-                  .map((propuesta) => (
-                    <ProposalCard key={propuesta.id} {...propuesta} />
+                  .filter((p: any) => p.estado === "rechazada")
+                  .map((propuesta: any) => (
+                    <ProposalCard 
+                      key={propuesta.id} 
+                      {...propuesta}
+                      autorNombre={propuesta.autorNombre || "Usuario"}
+                      numComentarios={0}
+                      userTokensBalance={tokensBalance}
+                    />
                   ))}
               </div>
             </TabsContent>
