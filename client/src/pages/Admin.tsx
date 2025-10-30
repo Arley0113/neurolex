@@ -20,26 +20,22 @@ import { useLocation, Link } from "wouter";
 export default function Admin() {
   const [, setLocation] = useLocation();
 
-  // Redirigir al login si no está autenticado
-  useEffect(() => {
-    if (!userId) {
-      setLocation("/login");
-    }
-  }, [userId, setLocation]);
-
   // Cargar datos del usuario
   const { data: user, isLoading: loadingUser } = useQuery<any>({
     queryKey: ["/api/users/me"],
   });
 
+  // Redirigir al login si no está autenticado
+  useEffect(() => {
+    if (!user && !loadingUser) {
+      setLocation("/login");
+    }
+  }, [user, loadingUser, setLocation]);
+
   // Cargar estadísticas (requiere ser admin)
   const { data: stats, isLoading: loadingStats, isError } = useQuery<any>({
     queryKey: ["/api/admin/stats"],
-    queryFn: async () => {
-      const res = await fetch(`/api/admin/stats?adminId=${userId}`);
-      if (!res.ok) throw new Error("Error al cargar estadísticas");
-      return res.json();
-    },
+    enabled: !!user?.isAdmin,
   });
 
   // Verificar que el usuario sea admin

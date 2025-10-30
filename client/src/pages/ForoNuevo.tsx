@@ -40,16 +40,12 @@ export default function ForoNuevo() {
 
   const createDebateMutation = useMutation({
     mutationFn: async (data: any) => {
-      if (!userId) {
+      if (!user) {
         throw new Error("Debes iniciar sesión para crear un debate");
       }
 
       if (user?.isAdmin) {
-        return apiRequest("POST", "/api/admin/debates", {
-          ...data,
-          autorId: userId,
-          adminId: userId,
-        });
+        return apiRequest("POST", "/api/admin/debates", data);
       } else {
         throw new Error("Solo los administradores pueden crear debates");
       }
@@ -73,7 +69,7 @@ export default function ForoNuevo() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!userId) {
+    if (!user) {
       toast({
         variant: "destructive",
         title: "Error",
@@ -94,7 +90,7 @@ export default function ForoNuevo() {
     createDebateMutation.mutate(formData);
   };
 
-  if (!userId) {
+  if (!user) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar user={user} tokensBalance={tokensBalance} />

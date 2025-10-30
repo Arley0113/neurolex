@@ -279,7 +279,7 @@ export default function PropuestaDetalle() {
                 <Button
                   variant="default"
                   onClick={handleSupport}
-                  disabled={supportMutation.isPending || !userId || !hasEnoughTokens}
+                  disabled={supportMutation.isPending || !user || !hasEnoughTokens}
                   data-testid="button-support-proposal"
                   className="gap-2"
                 >
@@ -309,7 +309,7 @@ export default function PropuestaDetalle() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Formulario para nuevo comentario */}
-              {userId ? (
+              {user ? (
                 <form onSubmit={handleSubmitComment} className="space-y-4">
                   <Textarea
                     placeholder="Escribe tu comentario..."
