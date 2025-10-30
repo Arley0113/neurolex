@@ -31,8 +31,7 @@ import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default function AdminDebates() {
-  const userId = localStorage.getItem("userId");
-  const { toast } = useToast();
+  const { toast} = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingDebate, setEditingDebate] = useState<any>(null);
@@ -45,41 +44,33 @@ export default function AdminDebates() {
 
   // Cargar usuario actual
   const { data: user } = useQuery<any>({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
+    queryKey: ["/api/users/me"],
   });
 
   // Cargar debates
   const { data: debates = [], isLoading } = useQuery<any[]>({
-    queryKey: ["/api/admin/debates", userId],
+    queryKey: ["/api/admin/debates"],
     queryFn: async () => {
-      const response = await fetch(`/api/admin/debates?adminId=${userId}`);
+      const response = await fetch("/api/admin/debates");
       if (!response.ok) {
         throw new Error("Error al cargar debates");
       }
       return response.json();
     },
-    enabled: !!user?.isAdmin && !!userId,
+    enabled: !!user?.isAdmin,
   });
 
   // Crear/editar debate
   const createOrUpdateMutation = useMutation({
     mutationFn: async (data: any) => {
       if (editingDebate) {
-        return apiRequest("PUT", `/api/admin/debates/${editingDebate.id}`, {
-          ...data,
-          adminId: userId,
-        });
+        return apiRequest("PUT", `/api/admin/debates/${editingDebate.id}`, data);
       } else {
-        return apiRequest("POST", "/api/admin/debates", {
-          ...data,
-          autorId: userId,
-          adminId: userId,
-        });
+        return apiRequest("POST", "/api/admin/debates", data);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates"] });
       toast({
         title: editingDebate ? "Debate actualizado" : "Debate creado",
         description: `El debate ha sido ${editingDebate ? "actualizado" : "creado"} correctamente`,
@@ -99,10 +90,10 @@ export default function AdminDebates() {
   // Eliminar debate
   const deleteMutation = useMutation({
     mutationFn: async (debateId: string) => {
-      return apiRequest("DELETE", `/api/admin/debates/${debateId}?adminId=${userId}`);
+      return apiRequest("DELETE", `/api/admin/debates/${debateId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/debates"] });
       toast({
         title: "Debate eliminado",
         description: "El debate ha sido eliminado correctamente",
@@ -122,12 +113,11 @@ export default function AdminDebates() {
     mutationFn: async ({ id, destacado }: { id: string; destacado: boolean }) => {
       return apiRequest("PUT", `/api/admin/debates/${id}`, {
         destacado: !destacado,
-        adminId: userId,
       });
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["/api/admin/debates", userId] });
-      await queryClient.refetchQueries({ queryKey: ["/api/admin/debates", userId] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/admin/debates"] });
+      await queryClient.refetchQueries({ queryKey: ["/api/admin/debates"] });
       toast({
         title: "Debate actualizado",
         description: "El estado destacado ha sido cambiado",

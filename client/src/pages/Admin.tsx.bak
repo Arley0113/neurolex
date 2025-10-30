@@ -19,6 +19,7 @@ import { useLocation, Link } from "wouter";
 
 export default function Admin() {
   const [, setLocation] = useLocation();
+  const userId = localStorage.getItem("userId");
 
   // Redirigir al login si no está autenticado
   useEffect(() => {
@@ -29,7 +30,8 @@ export default function Admin() {
 
   // Cargar datos del usuario
   const { data: user, isLoading: loadingUser } = useQuery<any>({
-    queryKey: ["/api/users/me"],
+    queryKey: ["/api/users/me", userId],
+    enabled: !!userId,
   });
 
   // Cargar estadísticas (requiere ser admin)
@@ -40,6 +42,7 @@ export default function Admin() {
       if (!res.ok) throw new Error("Error al cargar estadísticas");
       return res.json();
     },
+    enabled: !!userId,
   });
 
   // Verificar que el usuario sea admin

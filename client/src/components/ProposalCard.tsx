@@ -52,24 +52,19 @@ export function ProposalCard({
   const tiempoRelativo = formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: es });
   const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
   const { toast } = useToast();
-  const userId = localStorage.getItem("userId");
   
   const hasEnoughTokens = userTokensBalance && userTokensBalance.tokensParticipacion >= 1;
 
   const supportMutation = useMutation({
     mutationFn: async () => {
-      if (!userId) {
-        throw new Error("Debes iniciar sesión para apoyar una propuesta");
-      }
       return apiRequest("POST", `/api/proposals/${id}/support`, {
-        userId,
         tipoToken: "TP",
         cantidad: 1,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/proposals"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tokens", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tokens"] });
       toast({
         title: "¡Apoyo enviado!",
         description: "Has apoyado esta propuesta con 1 Token de Participación",
@@ -85,14 +80,6 @@ export function ProposalCard({
   });
 
   const handleSupport = () => {
-    if (!userId) {
-      toast({
-        variant: "destructive",
-        title: "Inicia sesión",
-        description: "Debes iniciar sesión para apoyar propuestas",
-      });
-      return;
-    }
     if (!hasEnoughTokens) {
       toast({
         variant: "destructive",
@@ -175,7 +162,7 @@ export function ProposalCard({
             variant="default" 
             size="icon" 
             onClick={handleSupport}
-            disabled={supportMutation.isPending || !userId || !hasEnoughTokens}
+            disabled={supportMutation.isPending || !hasEnoughTokens}
             data-testid={`button-support-${id}`}
             title={!hasEnoughTokens ? "Tokens insuficientes" : "Apoyar con 1 TP"}
           >

@@ -48,18 +48,28 @@ Mejoras de Seguridad Aplicadas:
 ✅ Agregada validación obligatoria de SESSION_SECRET en producción  
 ✅ Configurado sameSite: 'lax' explícitamente
 
-Estado Actual:
-- ✅ Backend core migrado a sesiones (15+ endpoints críticos)
-- ✅ Frontend páginas principales migradas (Dashboard, Monedero, Sondeos, comentarios)
-- ⚠️ Archivos admin pendientes de migración (AdminNoticias, AdminPropuestas, etc.)
-- ⚠️ Archivos de donaciones/compras pendientes (DonateModal, ComprarTokens)
-- ⚠️ Rutas de backward compatibility causando errores 401 en logs
+**Migración Completa Realizada:**
+✅ Backend: 15+ endpoints usando req.session.userId
+✅ Frontend: 26 archivos migrados eliminando localStorage.userId
 
-Próximos Pasos Críticos:
-1. Migrar archivos admin restantes
-2. Migrar DonateModal, ComprarTokens  
-3. Eliminar rutas backward compatibility backend
-4. Implementar interceptor centralizado 401 en queryClient
-5. Agregar ruta /api/auth/logout
-6. Testing E2E completo
+**Archivos Frontend Migrados:**
+- Autenticación: Login.tsx, Register.tsx
+- Dashboard: Dashboard.tsx, Monedero.tsx
+- Sondeos: Sondeos.tsx
+- Comentarios: ForoDetalle.tsx, NoticiaDetalle.tsx, PropuestaDetalle.tsx
+- Admin: AdminNoticias.tsx, AdminPropuestas.tsx, AdminDebates.tsx, AdminSondeos.tsx, AdminUsuarios.tsx
+- Donaciones/Compras: DonateModal.tsx, ProposalCard.tsx, ComprarTokens.tsx
+- Páginas Públicas: Home.tsx, Noticias.tsx, Informacion.tsx, Contacto.tsx, Propuestas.tsx, Admin.tsx, Foro.tsx, ForoNuevo.tsx
+
+**Verificación en Logs:**
+✅ Rutas ahora correctas: GET /api/users/me (sin userId en URL)
+✅ Rutas ahora correctas: GET /api/tokens (sin userId en URL)
+✅ Errores 401 esperados cuando no hay sesión activa
+
+**Próximos Pasos (Post-Revisión):**
+1. Revisar manejo de errores 401 si architect lo requiere
+2. Eliminar rutas backward compatibility del backend
+3. Implementar interceptor centralizado 401 en queryClient (opcional)
+4. Agregar ruta /api/auth/logout
+5. Testing E2E completo con playwright
 

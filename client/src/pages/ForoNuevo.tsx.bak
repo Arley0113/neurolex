@@ -21,6 +21,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
 
 export default function ForoNuevo() {
+  const userId = localStorage.getItem("userId");
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
@@ -31,11 +32,13 @@ export default function ForoNuevo() {
   });
 
   const { data: user } = useQuery({
-    queryKey: ["/api/users/me"],
+    queryKey: ["/api/users/me", userId],
+    enabled: !!userId,
   });
 
   const { data: tokensBalance } = useQuery({
-    queryKey: ["/api/tokens"],
+    queryKey: ["/api/tokens", userId],
+    enabled: !!userId,
   });
 
   const createDebateMutation = useMutation({

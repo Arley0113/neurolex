@@ -53,25 +53,24 @@ type PollFormData = z.infer<typeof pollSchema>;
 export default function AdminSondeos() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const userId = localStorage.getItem("userId");
   const [options, setOptions] = useState<string[]>(["", ""]);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingPoll, setEditingPoll] = useState<any>(null);
 
+  const { data: user } = useQuery<any>({
+    queryKey: ["/api/users/me"],
+  });
+
   useEffect(() => {
-    if (!userId) {
+    if (user === undefined) return; // Esperando carga
+    if (!user) {
       setLocation("/login");
     }
-  }, [userId, setLocation]);
-
-  const { data: user } = useQuery<any>({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
-  });
+  }, [user, setLocation]);
 
   const { data: polls, isLoading } = useQuery<any[]>({
     queryKey: ["/api/polls"],
-    enabled: !!userId,
+    enabled: !!user,
   });
 
   const form = useForm<PollFormData>({
@@ -85,10 +84,7 @@ export default function AdminSondeos() {
 
   const createPollMutation = useMutation({
     mutationFn: async (data: PollFormData & { opciones: string[] }) => {
-      return apiRequest("POST", "/api/admin/polls", {
-        adminId: userId,
-        ...data,
-      });
+      return apiRequest("POST", "/api/admin/polls", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
@@ -111,10 +107,7 @@ export default function AdminSondeos() {
   const updatePollMutation = useMutation({
     mutationFn: async (data: { id: string } & Partial<PollFormData>) => {
       const { id, ...pollData } = data;
-      return apiRequest("PUT", `/api/admin/polls/${id}`, {
-        adminId: userId,
-        ...pollData,
-      });
+      return apiRequest("PUT", `/api/admin/polls/${id}`, pollData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
@@ -136,7 +129,7 @@ export default function AdminSondeos() {
 
   const deletePollMutation = useMutation({
     mutationFn: async (pollId: string) => {
-      return apiRequest("DELETE", `/api/admin/polls/${pollId}?adminId=${userId}`);
+      return apiRequest("DELETE", `/api/admin/polls/${pollId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });

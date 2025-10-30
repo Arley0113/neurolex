@@ -20,15 +20,19 @@ import { useQuery } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 
 export default function Propuestas() {
+  // Obtener userId del localStorage
+  const userId = localStorage.getItem("userId");
 
   // Cargar datos del usuario si está autenticado
   const { data: user } = useQuery({
-    queryKey: ["/api/users/me"],
+    queryKey: ["/api/users/me", userId],
+    enabled: !!userId,
   });
 
   // Cargar balance de tokens si está autenticado
   const { data: tokensBalance } = useQuery({
-    queryKey: ["/api/tokens"],
+    queryKey: ["/api/tokens", userId],
+    enabled: !!userId,
   });
 
   // Cargar propuestas del backend

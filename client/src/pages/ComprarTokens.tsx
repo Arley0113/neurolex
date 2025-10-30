@@ -19,30 +19,29 @@ import { BLOCKCHAIN_CONFIG, calculateETHPrice, calculateTAAmount } from "@shared
 export default function ComprarTokens() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const userId = localStorage.getItem("userId");
 
   const [taAmount, setTaAmount] = useState(100);
   const [ethAmount, setEthAmount] = useState(calculateETHPrice(100));
   const [txHash, setTxHash] = useState<string | null>(null);
   const [isLinkingWallet, setIsLinkingWallet] = useState(false);
 
-  // Redirigir al login si no está autenticado
-  useEffect(() => {
-    if (!userId) {
-      setLocation("/login");
-    }
-  }, [userId, setLocation]);
-
   // Cargar datos del usuario
   const { data: user } = useQuery<any>({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
+    queryKey: ["/api/users/me"],
   });
+
+  // Redirigir al login si no está autenticado
+  useEffect(() => {
+    if (user === undefined) return; // Esperando carga
+    if (!user) {
+      setLocation("/login");
+    }
+  }, [user, setLocation]);
 
   // Cargar balance de tokens
   const { data: tokensBalance } = useQuery<any>({
-    queryKey: ["/api/tokens", userId],
-    enabled: !!userId,
+    queryKey: ["/api/tokens"],
+    enabled: !!user,
   });
 
   // Web3/MetaMask
@@ -51,11 +50,11 @@ export default function ComprarTokens() {
   // Vincular wallet al usuario con firma criptográfica
   useEffect(() => {
     const linkWalletWithSignature = async () => {
-      if (isConnected && account && userId && !user?.walletAddress && !isLinkingWallet) {
+      if (isConnected && account && user && !user.walletAddress && !isLinkingWallet) {
         setIsLinkingWallet(true);
         try {
           // 1. Crear mensaje para firmar
-          const message = `Vincular wallet a Neurolex\nUsuario: ${userId}\nWallet: ${account}\nFecha: ${new Date().toISOString()}`;
+          const message = `Vincular wallet a Neurolex\nUsuario: ${user.id}\nWallet: ${account}\nFecha: ${new Date().toISOString()}`;
           
           // 2. Solicitar firma al usuario con MetaMask
           const signature = await window.ethereum?.request({
@@ -64,14 +63,14 @@ export default function ComprarTokens() {
           });
 
           // 3. Enviar firma al backend para verificar y vincular
-          await apiRequest("POST", `/api/users/${userId}/link-wallet`, {
+          await apiRequest("POST", "/api/users/link-wallet", {
             walletAddress: account,
             message,
             signature,
           });
 
           // Refrescar datos del usuario para mostrar wallet vinculada
-          queryClient.invalidateQueries({ queryKey: ["/api/users/me", userId] });
+          queryClient.invalidateQueries({ queryKey: ["/api/users/me"] });
           
           toast({
             title: "Wallet vinculada",
@@ -91,16 +90,16 @@ export default function ComprarTokens() {
     };
 
     linkWalletWithSignature();
-  }, [isConnected, account, userId, user?.walletAddress, toast, isLinkingWallet]);
+  }, [isConnected, account, user, toast, isLinkingWallet]);
 
   // Mutación para registrar la compra en el backend
   const purchaseMutation = useMutation({
-    mutationFn: async (data: { userId: string; taAmount: number; ethAmount: string; txHash: string }) => {
+    mutationFn: async (data: { taAmount: number; ethAmount: string; txHash: string }) => {
       return apiRequest("POST", "/api/tokens/purchase", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tokens", userId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tokens"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       toast({
         title: "¡Compra exitosa!",
         description: `Has adquirido ${taAmount} Tokens de Apoyo`,
@@ -193,7 +192,6 @@ export default function ComprarTokens() {
 
       // Registrar la compra en el backend
       purchaseMutation.mutate({
-        userId: userId!,
         taAmount,
         ethAmount,
         txHash: txHash as string,
@@ -209,7 +207,7 @@ export default function ComprarTokens() {
     }
   };
 
-  if (!userId) {
+  if (!user) {
     return null;
   }
 

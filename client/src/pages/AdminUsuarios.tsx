@@ -32,35 +32,31 @@ import { es } from "date-fns/locale";
 export default function AdminUsuarios() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const userId = localStorage.getItem("userId");
-
-  useEffect(() => {
-    if (!userId) {
-      setLocation("/login");
-    }
-  }, [userId, setLocation]);
 
   const { data: currentUser } = useQuery<any>({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
+    queryKey: ["/api/users/me"],
   });
+
+  useEffect(() => {
+    if (currentUser === undefined) return; // Esperando carga
+    if (!currentUser) {
+      setLocation("/login");
+    }
+  }, [currentUser, setLocation]);
 
   const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
     queryFn: async () => {
-      const res = await fetch(`/api/admin/users?adminId=${userId}`);
+      const res = await fetch("/api/admin/users");
       if (!res.ok) throw new Error("Error al cargar usuarios");
       return res.json();
     },
-    enabled: !!userId,
+    enabled: !!currentUser,
   });
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest("PUT", `/api/admin/users/${id}`, {
-        adminId: userId,
-        ...data,
-      });
+      return apiRequest("PUT", `/api/admin/users/${id}`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
@@ -200,7 +196,7 @@ export default function AdminUsuarios() {
                             <Select
                               value={user.nivel}
                               onValueChange={(value) => handleLevelChange(user.id, value)}
-                              disabled={updateUserMutation.isPending || user.id === userId}
+                              disabled={updateUserMutation.isPending || user.id === currentUser.id}
                             >
                               <SelectTrigger className="w-32" data-testid={`select-level-${user.id}`}>
                                 <SelectValue>
@@ -220,7 +216,7 @@ export default function AdminUsuarios() {
                               <Switch
                                 checked={user.isAdmin}
                                 onCheckedChange={(checked) => handleAdminToggle(user.id, checked)}
-                                disabled={updateUserMutation.isPending || user.id === userId}
+                                disabled={updateUserMutation.isPending || user.id === currentUser.id}
                                 data-testid={`switch-admin-${user.id}`}
                               />
                               <span className="text-sm text-muted-foreground">

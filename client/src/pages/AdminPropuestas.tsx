@@ -63,25 +63,24 @@ import { es } from "date-fns/locale";
 export default function AdminPropuestas() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const userId = localStorage.getItem("userId");
   const [proposalToDelete, setProposalToDelete] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProposal, setEditingProposal] = useState<any>(null);
 
+  const { data: user } = useQuery<any>({
+    queryKey: ["/api/users/me"],
+  });
+
   useEffect(() => {
-    if (!userId) {
+    if (user === undefined) return; // Esperando carga
+    if (!user) {
       setLocation("/login");
     }
-  }, [userId, setLocation]);
-
-  const { data: user } = useQuery<any>({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
-  });
+  }, [user, setLocation]);
 
   const { data: proposals, isLoading } = useQuery<any[]>({
     queryKey: ["/api/proposals"],
-    enabled: !!userId,
+    enabled: !!user,
   });
 
   const form = useForm({
@@ -93,22 +92,16 @@ export default function AdminPropuestas() {
       estado: "en_deliberacion" as const,
       categoria: "",
       partidoRelacionado: "",
-      autorId: userId || "",
+      autorId: "",
     },
   });
 
   const createOrUpdateMutation = useMutation({
     mutationFn: async (data: any) => {
       if (editingProposal) {
-        return apiRequest("PUT", `/api/proposals/${editingProposal.id}`, {
-          ...data,
-          userId,
-        });
+        return apiRequest("PUT", `/api/proposals/${editingProposal.id}`, data);
       } else {
-        return apiRequest("POST", "/api/proposals", {
-          ...data,
-          autorId: userId,
-        });
+        return apiRequest("POST", "/api/proposals", data);
       }
     },
     onSuccess: () => {
@@ -133,7 +126,6 @@ export default function AdminPropuestas() {
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, estado }: { id: string; estado: string }) => {
       return apiRequest("PUT", `/api/admin/proposals/${id}/status`, {
-        adminId: userId,
         estado,
       });
     },
@@ -155,7 +147,7 @@ export default function AdminPropuestas() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/admin/proposals/${id}?adminId=${userId}`);
+      return apiRequest("DELETE", `/api/admin/proposals/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/proposals"] });

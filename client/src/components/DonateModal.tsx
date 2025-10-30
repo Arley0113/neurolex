@@ -27,26 +27,25 @@ interface DonateModalProps {
 export function DonateModal({ isOpen, onClose, proposalId, proposalTitle }: DonateModalProps) {
   const [amount, setAmount] = useState(10);
   const { toast } = useToast();
-  const userId = localStorage.getItem("userId");
 
   // Cargar balance de tokens del usuario
   const { data: tokensBalance } = useQuery<any>({
-    queryKey: ["/api/tokens", userId],
-    enabled: !!userId && isOpen,
+    queryKey: ["/api/tokens"],
+    enabled: isOpen,
   });
 
   const taBalance = tokensBalance?.tokensApoyo || 0;
 
   // Mutación para donar
   const donateMutation = useMutation({
-    mutationFn: async (data: { userId: string; proposalId: string; amount: number }) => {
+    mutationFn: async (data: { proposalId: string; amount: number }) => {
       return apiRequest("POST", "/api/proposals/donate", data);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/tokens", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tokens"] });
       queryClient.invalidateQueries({ queryKey: ["/api/proposals"] });
       queryClient.invalidateQueries({ queryKey: ["/api/proposals", proposalId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/transactions", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/transactions"] });
       
       toast({
         title: "¡Donación exitosa!",
@@ -66,15 +65,6 @@ export function DonateModal({ isOpen, onClose, proposalId, proposalTitle }: Dona
   });
 
   const handleDonate = () => {
-    if (!userId) {
-      toast({
-        variant: "destructive",
-        title: "No autenticado",
-        description: "Debes iniciar sesión para donar",
-      });
-      return;
-    }
-
     if (amount <= 0) {
       toast({
         variant: "destructive",
@@ -93,7 +83,7 @@ export function DonateModal({ isOpen, onClose, proposalId, proposalTitle }: Dona
       return;
     }
 
-    donateMutation.mutate({ userId, proposalId, amount });
+    donateMutation.mutate({ proposalId, amount });
   };
 
   return (

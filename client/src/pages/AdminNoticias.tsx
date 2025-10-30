@@ -21,7 +21,6 @@ import { es } from "date-fns/locale";
 export default function AdminNoticias() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const userId = localStorage.getItem("userId");
   
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingNews, setEditingNews] = useState<any>(null);
@@ -33,18 +32,18 @@ export default function AdminNoticias() {
     imagenUrl: "",
   });
 
-  // Redirigir al login si no está autenticado
-  useEffect(() => {
-    if (!userId) {
-      setLocation("/login");
-    }
-  }, [userId, setLocation]);
-
   // Cargar usuario
   const { data: user } = useQuery<any>({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
+    queryKey: ["/api/users/me"],
   });
+
+  // Redirigir al login si no está autenticado
+  useEffect(() => {
+    if (user === undefined) return; // Esperando carga
+    if (!user) {
+      setLocation("/login");
+    }
+  }, [user, setLocation]);
 
   // Cargar noticias
   const { data: news = [], isLoading } = useQuery<any[]>({
@@ -56,15 +55,9 @@ export default function AdminNoticias() {
   const createOrUpdateMutation = useMutation({
     mutationFn: async (data: any) => {
       if (editingNews) {
-        return apiRequest("PUT", `/api/admin/news/${editingNews.id}`, {
-          ...data,
-          adminId: userId,
-        });
+        return apiRequest("PUT", `/api/admin/news/${editingNews.id}`, data);
       } else {
-        return apiRequest("POST", "/api/admin/news", {
-          ...data,
-          adminId: userId,
-        });
+        return apiRequest("POST", "/api/admin/news", data);
       }
     },
     onSuccess: () => {
@@ -88,7 +81,7 @@ export default function AdminNoticias() {
   // Eliminar noticia
   const deleteMutation = useMutation({
     mutationFn: async (newsId: string) => {
-      return apiRequest("DELETE", `/api/admin/news/${newsId}?adminId=${userId}`);
+      return apiRequest("DELETE", `/api/admin/news/${newsId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/news"] });

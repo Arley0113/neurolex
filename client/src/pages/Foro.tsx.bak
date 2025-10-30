@@ -11,13 +11,16 @@ import { Loader2 } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Foro() {
+  const userId = localStorage.getItem("userId");
 
   const { data: user } = useQuery({
-    queryKey: ["/api/users/me"],
+    queryKey: ["/api/users/me", userId],
+    enabled: !!userId,
   });
 
   const { data: tokensBalance } = useQuery({
-    queryKey: ["/api/tokens"],
+    queryKey: ["/api/tokens", userId],
+    enabled: !!userId,
   });
 
   const { data: debates = [], isLoading: debatesLoading } = useQuery<DebateConAutor[]>({
