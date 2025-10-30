@@ -6,10 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Clock, TrendingUp } from "lucide-react";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Sondeos() {
+  const { toast } = useToast();
+  
   // Obtener userId del localStorage
   const userId = localStorage.getItem("userId");
 
@@ -29,6 +33,54 @@ export default function Sondeos() {
   const { data: allPolls = [], isLoading } = useQuery({
     queryKey: ["/api/polls"],
   });
+
+  // Cargar sondeos en los que el usuario ya votó
+  const { data: votedPollIds = [] } = useQuery({
+    queryKey: ["/api/polls/user", userId, "voted"],
+    enabled: !!userId,
+  });
+
+  // Mutación para votar
+  const voteMutation = useMutation({
+    mutationFn: async ({ pollId, optionId }: { pollId: string; optionId: string }) => {
+      if (!userId) {
+        throw new Error("Debes iniciar sesión para votar");
+      }
+      return apiRequest(`/api/polls/${pollId}/vote`, "POST", { userId, optionId });
+    },
+    onSuccess: () => {
+      // Invalidar queries para actualizar los datos
+      queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/polls/user", userId, "voted"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tokens", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users/me", userId] });
+      
+      toast({
+        title: "¡Voto registrado!",
+        description: "Has ganado 10 TP y 5 puntos de karma",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al votar",
+        description: error.message || "No se pudo registrar tu voto",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Función para manejar el voto
+  const handleVote = (pollId: string, optionId: string) => {
+    if (!userId) {
+      toast({
+        title: "Inicia sesión",
+        description: "Debes iniciar sesión para votar en sondeos",
+        variant: "destructive",
+      });
+      return;
+    }
+    voteMutation.mutate({ pollId, optionId });
+  };
 
   // Filtrar sondeos activos y cerrados basándose en la fecha de finalización
   const now = new Date();
@@ -101,7 +153,12 @@ export default function Sondeos() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {sondeosActivos.map((sondeo: any) => (
-                  <PollCard key={sondeo.id} {...sondeo} hasVoted={false} />
+                  <PollCard 
+                    key={sondeo.id} 
+                    {...sondeo} 
+                    hasVoted={votedPollIds.includes(sondeo.id)}
+                    onVote={handleVote}
+                  />
                 ))}
               </div>
             )}
@@ -129,7 +186,12 @@ export default function Sondeos() {
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {sondeosCerrados.map((sondeo: any) => (
-                  <PollCard key={sondeo.id} {...sondeo} hasVoted={true} />
+                  <PollCard 
+                    key={sondeo.id} 
+                    {...sondeo} 
+                    hasVoted={true}
+                    onVote={handleVote}
+                  />
                 ))}
               </div>
             )}
