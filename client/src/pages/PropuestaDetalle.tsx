@@ -47,19 +47,17 @@ const estadoConfig: Record<string, { label: string; variant: "default" | "second
 export default function PropuestaDetalle() {
   const { id } = useParams();
   const [, navigate] = useLocation();
-  const userId = localStorage.getItem("userId");
   const { toast } = useToast();
   const [comentario, setComentario] = useState("");
   const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
 
   const { data: user } = useQuery({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
+    queryKey: ["/api/users/me"],
   });
 
   const { data: tokensBalance } = useQuery({
-    queryKey: ["/api/tokens", userId],
-    enabled: !!userId,
+    queryKey: ["/api/tokens"],
+    enabled: !!user,
   });
 
   const { data: propuesta, isLoading } = useQuery<PropuestaDetalle>({
@@ -76,18 +74,17 @@ export default function PropuestaDetalle() {
 
   const supportMutation = useMutation({
     mutationFn: async () => {
-      if (!userId) {
+      if (!user) {
         throw new Error("Debes iniciar sesión para apoyar una propuesta");
       }
       return apiRequest("POST", `/api/proposals/${id}/support`, {
-        userId,
         tipoToken: "TP",
         cantidad: 1,
       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/proposals", id] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tokens", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tokens"] });
       toast({
         title: "¡Apoyo enviado!",
         description: "Has apoyado esta propuesta con 1 Token de Participación",
@@ -104,12 +101,11 @@ export default function PropuestaDetalle() {
 
   const addCommentMutation = useMutation({
     mutationFn: async (contenido: string) => {
-      if (!userId) {
+      if (!user) {
         throw new Error("Debes iniciar sesión para comentar");
       }
       return apiRequest("POST", `/api/comments`, {
         contenido,
-        autorId: userId,
         propuestaId: id,
       });
     },
@@ -145,7 +141,7 @@ export default function PropuestaDetalle() {
   };
 
   const handleSupport = () => {
-    if (!userId) {
+    if (!user) {
       toast({
         variant: "destructive",
         title: "Inicia sesión",

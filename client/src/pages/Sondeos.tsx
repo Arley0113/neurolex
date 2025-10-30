@@ -13,20 +13,16 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Sondeos() {
   const { toast } = useToast();
-  
-  // Obtener userId del localStorage
-  const userId = localStorage.getItem("userId");
 
-  // Cargar datos del usuario si está autenticado
+  // Cargar datos del usuario (desde sesión del servidor)
   const { data: user } = useQuery({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
+    queryKey: ["/api/users/me"],
   });
 
-  // Cargar balance de tokens si está autenticado
+  // Cargar balance de tokens
   const { data: tokensBalance } = useQuery({
-    queryKey: ["/api/tokens", userId],
-    enabled: !!userId,
+    queryKey: ["/api/tokens"],
+    enabled: !!user,
   });
 
   // Cargar sondeos del backend
@@ -36,24 +32,24 @@ export default function Sondeos() {
 
   // Cargar sondeos en los que el usuario ya votó
   const { data: votedPollIds = [] } = useQuery({
-    queryKey: ["/api/polls/user", userId, "voted"],
-    enabled: !!userId,
+    queryKey: ["/api/polls/user/voted"],
+    enabled: !!user,
   });
 
   // Mutación para votar
   const voteMutation = useMutation({
     mutationFn: async ({ pollId, optionId }: { pollId: string; optionId: string }) => {
-      if (!userId) {
+      if (!user) {
         throw new Error("Debes iniciar sesión para votar");
       }
-      return apiRequest("POST", `/api/polls/${pollId}/vote`, { userId, optionId });
+      return apiRequest("POST", `/api/polls/${pollId}/vote`, { optionId });
     },
     onSuccess: () => {
       // Invalidar queries para actualizar los datos
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/polls/user", userId, "voted"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/tokens", userId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/users/me", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/polls/user/voted"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/tokens"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users/me"] });
       
       toast({
         title: "¡Voto registrado!",
@@ -71,7 +67,7 @@ export default function Sondeos() {
 
   // Función para manejar el voto
   const handleVote = (pollId: string, optionId: string) => {
-    if (!userId) {
+    if (!user) {
       toast({
         title: "Inicia sesión",
         description: "Debes iniciar sesión para votar en sondeos",

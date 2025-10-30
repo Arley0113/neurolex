@@ -24,31 +24,29 @@ import { es } from "date-fns/locale";
 
 export default function Monedero() {
   const [, setLocation] = useLocation();
-  const userId = localStorage.getItem("userId");
 
-  // Redirigir al login si no está autenticado
+  // Cargar datos del usuario (desde sesión del servidor)
+  const { data: user, isError: userError } = useQuery<any>({
+    queryKey: ["/api/users/me"],
+  });
+
+  // Redirigir al login si la sesión expiró
   useEffect(() => {
-    if (!userId) {
+    if (userError) {
       setLocation("/login");
     }
-  }, [userId, setLocation]);
-
-  // Cargar datos del usuario
-  const { data: user } = useQuery<any>({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
-  });
+  }, [userError, setLocation]);
 
   // Cargar balance de tokens
   const { data: tokensBalance, isLoading: loadingTokens } = useQuery<any>({
-    queryKey: ["/api/tokens", userId],
-    enabled: !!userId,
+    queryKey: ["/api/tokens"],
+    enabled: !!user,
   });
 
   // Cargar historial de transacciones
   const { data: transactions = [], isLoading: loadingTransactions, isError, error } = useQuery<any[]>({
-    queryKey: ["/api/transactions", userId],
-    enabled: !!userId,
+    queryKey: ["/api/transactions"],
+    enabled: !!user,
   });
 
   // Web3/MetaMask
@@ -66,8 +64,12 @@ export default function Monedero() {
     TGR: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
   };
 
-  if (!userId) {
-    return null;
+  if (!user && !userError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
   }
 
   return (

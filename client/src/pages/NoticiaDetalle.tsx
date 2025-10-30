@@ -33,18 +33,16 @@ export default function NoticiaDetalle() {
   const [, params] = useRoute("/noticias/:id");
   const noticiaId = params?.id;
 
-  const userId = localStorage.getItem("userId");
   const { toast } = useToast();
   const [comentario, setComentario] = useState("");
 
   const { data: user } = useQuery({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
+    queryKey: ["/api/users/me"],
   });
 
   const { data: tokensBalance } = useQuery({
-    queryKey: ["/api/tokens", userId],
-    enabled: !!userId,
+    queryKey: ["/api/tokens"],
+    enabled: !!user,
   });
 
   const { data: noticia, isLoading, error } = useQuery<any>({
@@ -59,12 +57,11 @@ export default function NoticiaDetalle() {
 
   const addCommentMutation = useMutation({
     mutationFn: async (contenido: string) => {
-      if (!userId) {
+      if (!user) {
         throw new Error("Debes iniciar sesión para comentar");
       }
       return apiRequest("POST", `/api/comments`, {
         contenido,
-        autorId: userId,
         noticiaId: noticiaId,
       });
     },

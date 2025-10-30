@@ -22,6 +22,23 @@ function validateRequest<T>(schema: z.ZodSchema<T>, data: any): { success: boole
   }
 }
 
+// Middleware para requerir autenticación
+function requireAuth(req: Request, res: Response, next: any) {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Debes iniciar sesión" });
+  }
+  next();
+}
+
+// Middleware para requerir rol de admin
+function requireAdmin(req: Request, res: Response, next: any) {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: "Debes iniciar sesión" });
+  }
+  // La verificación de isAdmin se hace en el handler
+  next();
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // ===========================================================================
@@ -68,6 +85,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Dar karma inicial
       await storage.addKarma(user.id, 50, "Bienvenida a Neurolex");
 
+      // Guardar userId en sesión
+      req.session.userId = user.id;
+
       // No devolver la contraseña
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
@@ -96,6 +116,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: "Credenciales inválidas" });
       }
 
+      // Guardar userId en sesión
+      req.session.userId = user.id;
+
       // No devolver la contraseña
       const { password: _, ...userWithoutPassword } = user;
       res.json(userWithoutPassword);
@@ -110,13 +133,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ===========================================================================
 
   // Obtener información del usuario actual
-  app.get("/api/users/me/:userId", async (req: Request, res: Response) => {
+  app.get("/api/users/me", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.params;
-      if (!userId) {
-        return res.status(400).json({ error: "Usuario no autenticado" });
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ error: "Usuario no encontrado" });
       }
 
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error al obtener usuario:", error);
+      res.status(500).json({ error: "Error al obtener información del usuario" });
+    }
+  });
+
+  // Backward compatibility: ruta antigua (deprecated)
+  app.get("/api/users/me/:userId", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ error: "Usuario no encontrado" });
@@ -134,17 +170,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // TOKENS
   // ===========================================================================
 
-  // ⚠️ SECURITY WARNING: Este endpoint tiene una limitación de seguridad conocida
-  // ⚠️ PROBLEMA: Actualmente NO hay autenticación real (JWT/sesiones)
-  // ⚠️ MITIGACIÓN PARCIAL: Validamos que el mensaje firmado incluya el userId correcto
-  // ⚠️ SOLUCIÓN REAL: Implementar JWT/sesiones y derivar userId del contexto autenticado
-  // ⚠️ RIESGO RESIDUAL: Si un atacante obtiene acceso a localStorage de otro usuario,
-  //    podría vincular su wallet a esa cuenta. La firma previene vincular wallets
-  //    ajenas, pero no previene el secuestro si el atacante tiene acceso al localStorage.
-  // Vincular wallet de MetaMask al usuario (CON VERIFICACIÓN DE FIRMA)
-  app.post("/api/users/:userId/link-wallet", async (req: Request, res: Response) => {
+  // Obtener balance de tokens del usuario autenticado
+  app.get("/api/tokens", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.params;
+      const userId = req.session.userId!;
+      const balance = await storage.getTokensBalance(userId);
+      res.json(balance);
+    } catch (error) {
+      console.error("Error al obtener balance de tokens:", error);
+      res.status(500).json({ error: "Error al obtener balance de tokens" });
+    }
+  });
+
+  // Backward compatibility: ruta antigua (deprecated)
+  app.get("/api/tokens/:userId", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const balance = await storage.getTokensBalance(userId);
+      res.json(balance);
+    } catch (error) {
+      console.error("Error al obtener balance de tokens:", error);
+      res.status(500).json({ error: "Error al obtener balance de tokens" });
+    }
+  });
+
+  // Vincular wallet de MetaMask al usuario (CON VERIFICACIÓN DE FIRMA)
+  app.post("/api/users/link-wallet", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
       const { walletAddress, message, signature } = req.body;
 
       if (!walletAddress || !message || !signature) {
@@ -232,10 +285,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Obtener historial de transacciones de un usuario
-  app.get("/api/transactions/:userId", async (req: Request, res: Response) => {
+  // Obtener historial de transacciones del usuario autenticado
+  app.get("/api/transactions", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.params;
+      const userId = req.session.userId!;
       const transactions = await storage.getTokenTransactions(userId);
       res.json(transactions);
     } catch (error) {
@@ -244,17 +297,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ⚠️ SECURITY WARNING: Este endpoint tiene una limitación de seguridad conocida
-  // ⚠️ PROBLEMA: Actualmente NO hay autenticación real (JWT/sesiones)
-  // ⚠️ MITIGACIÓN: Múltiples capas de validación blockchain previenen la mayoría de ataques
-  // ⚠️ SOLUCIÓN REAL: Implementar JWT/sesiones y derivar userId del contexto autenticado
-  // Procesar compra de tokens con criptomonedas (CON VERIFICACIÓN BLOCKCHAIN)
-  app.post("/api/tokens/purchase", async (req: Request, res: Response) => {
+  // Backward compatibility: ruta antigua (deprecated)
+  app.get("/api/transactions/:userId", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { userId, taAmount, ethAmount, txHash } = req.body;
+      const userId = req.session.userId!;
+      const transactions = await storage.getTokenTransactions(userId);
+      res.json(transactions);
+    } catch (error) {
+      console.error("Error al obtener transacciones:", error);
+      res.status(500).json({ error: "Error al obtener historial de transacciones" });
+    }
+  });
+
+  // Procesar compra de tokens con criptomonedas (CON VERIFICACIÓN BLOCKCHAIN)
+  app.post("/api/tokens/purchase", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const { taAmount, ethAmount, txHash } = req.body;
 
       // 1. Validar datos básicos
-      if (!userId || !taAmount || !ethAmount || !txHash) {
+      if (!taAmount || !ethAmount || !txHash) {
         return res.status(400).json({ error: "Datos incompletos para la compra" });
       }
 
@@ -458,12 +520,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Apoyar una propuesta con tokens
-  app.post("/api/proposals/:id/support", async (req: Request, res: Response) => {
+  app.post("/api/proposals/:id/support", requireAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { userId, tipoToken, cantidad } = req.body;
+      const userId = req.session.userId!;
+      const { tipoToken, cantidad } = req.body;
 
-      if (!userId || !tipoToken || !cantidad) {
+      if (!tipoToken || !cantidad) {
         return res.status(400).json({ error: "Faltan parámetros requeridos" });
       }
 
@@ -513,11 +576,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Donar tokens de apoyo (TA) a una propuesta
-  app.post("/api/proposals/donate", async (req: Request, res: Response) => {
+  app.post("/api/proposals/donate", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { userId, proposalId, amount } = req.body;
+      const userId = req.session.userId!;
+      const { proposalId, amount } = req.body;
 
-      if (!userId || !proposalId || !amount) {
+      if (!proposalId || !amount) {
         return res.status(400).json({ error: "Datos incompletos para la donación" });
       }
 
@@ -649,12 +713,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Votar en un sondeo
-  app.post("/api/polls/:pollId/vote", async (req: Request, res: Response) => {
+  app.post("/api/polls/:pollId/vote", requireAuth, async (req: Request, res: Response) => {
     try {
       const { pollId } = req.params;
-      const { userId, optionId } = req.body;
+      const userId = req.session.userId!;
+      const { optionId } = req.body;
 
-      if (!userId || !optionId) {
+      if (!optionId) {
         return res.status(400).json({ error: "Faltan parámetros requeridos" });
       }
 
@@ -680,9 +745,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Obtener los sondeos en los que el usuario ha votado
-  app.get("/api/polls/user/:userId/voted", async (req: Request, res: Response) => {
+  app.get("/api/polls/user/voted", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { userId } = req.params;
+      const userId = req.session.userId!;
+      const polls = await storage.getAllPolls();
+      
+      // Verificar cada sondeo para ver si el usuario ha votado
+      const votedPolls = await Promise.all(
+        polls.map(async (poll) => {
+          const hasVoted = await storage.hasUserVoted(userId, poll.id);
+          return hasVoted ? poll.id : null;
+        })
+      );
+      
+      const votedPollIds = votedPolls.filter((id): id is string => id !== null);
+      res.json(votedPollIds);
+    } catch (error) {
+      console.error("Error al obtener sondeos votados:", error);
+      res.status(500).json({ error: "Error al obtener sondeos votados" });
+    }
+  });
+
+  // Backward compatibility: ruta antigua (deprecated)
+  app.get("/api/polls/user/:userId/voted", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
       const polls = await storage.getAllPolls();
       
       // Verificar cada sondeo para ver si el usuario ha votado
@@ -731,9 +818,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Crear comentario
-  app.post("/api/comments", async (req: Request, res: Response) => {
+  app.post("/api/comments", requireAuth, async (req: Request, res: Response) => {
     try {
-      const validation = validateRequest(insertCommentSchema, req.body);
+      const userId = req.session.userId!;
+      const commentData = { ...req.body, autorId: userId };
+      
+      const validation = validateRequest(insertCommentSchema, commentData);
       if (!validation.success) {
         return res.status(400).json({ error: validation.error });
       }
@@ -741,7 +831,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const comentario = await storage.createComment(validation.data!);
       
       // Dar karma por comentar
-      await storage.addKarma(comentario.autorId, 2, "Comentario creado");
+      await storage.addKarma(userId, 2, "Comentario creado");
 
       res.status(201).json(comentario);
     } catch (error) {
@@ -834,13 +924,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Crear comentario en un debate
-  app.post("/api/debates/:id/comments", async (req: Request, res: Response) => {
+  app.post("/api/debates/:id/comments", requireAuth, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const validation = validateRequest(insertCommentSchema.extend({ debateId: z.string() }).partial({ propuestaId: true, noticiaId: true }), {
-        ...req.body,
-        debateId: id,
-      });
+      const userId = req.session.userId!;
+      const commentData = { ...req.body, autorId: userId, debateId: id };
+      
+      const validation = validateRequest(insertCommentSchema.extend({ debateId: z.string() }).partial({ propuestaId: true, noticiaId: true }), commentData);
 
       if (!validation.success) {
         return res.status(400).json({ error: validation.error });
@@ -857,7 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Dar karma por comentar
-      await storage.addKarma(validation.data!.autorId, 2, "Comentario en debate");
+      await storage.addKarma(userId, 2, "Comentario en debate");
 
       res.status(201).json(comentario);
     } catch (error) {
@@ -873,12 +963,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware para verificar si el usuario es administrador
   const isAdmin = async (req: Request, res: Response, next: Function) => {
     try {
-      const userId = req.body.adminId || req.params.adminId || req.query.adminId;
+      const userId = req.session.userId;
       if (!userId) {
         return res.status(401).json({ error: "No autenticado" });
       }
 
-      const user = await storage.getUser(userId as string);
+      const user = await storage.getUser(userId);
       if (!user || !user.isAdmin) {
         return res.status(403).json({ error: "No tienes permisos de administrador" });
       }

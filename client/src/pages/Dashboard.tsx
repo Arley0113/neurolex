@@ -17,26 +17,22 @@ import { useLocation } from "wouter";
 export default function Dashboard() {
   const [, setLocation] = useLocation();
 
-  // Obtener userId del localStorage
-  const userId = localStorage.getItem("userId");
+  // Cargar datos del usuario (desde sesión del servidor)
+  const { data: user, isLoading: loadingUser, isError: userError } = useQuery({
+    queryKey: ["/api/users/me"],
+  });
 
-  // Redirigir al login si no está autenticado
+  // Redirigir al login si la sesión expiró
   useEffect(() => {
-    if (!userId) {
+    if (userError) {
       setLocation("/login");
     }
-  }, [userId, setLocation]);
-
-  // Cargar datos del usuario
-  const { data: user, isLoading: loadingUser } = useQuery({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
-  });
+  }, [userError, setLocation]);
 
   // Cargar balance de tokens
   const { data: tokensBalance, isLoading: loadingTokens } = useQuery({
-    queryKey: ["/api/tokens", userId],
-    enabled: !!userId,
+    queryKey: ["/api/tokens"],
+    enabled: !!user,
   });
 
   // Cargar propuestas

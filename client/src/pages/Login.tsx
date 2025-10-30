@@ -51,9 +51,8 @@ export default function Login() {
         throw new Error(result.error || "Error al iniciar sesión");
       }
 
-      // Guardar información del usuario en localStorage
-      localStorage.setItem("userId", result.id);
-      localStorage.setItem("user", JSON.stringify(result));
+      // La sesión se maneja en el servidor, no guardamos en localStorage
+      // El userId ahora se obtiene desde el servidor vía /api/users/me
 
       setLocation("/dashboard");
     } catch (error: any) {

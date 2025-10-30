@@ -5,7 +5,22 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "./db";
 
+// Extender tipos de sesión para TypeScript
+declare module "express-session" {
+  interface SessionData {
+    userId: string;
+  }
+}
+
 const app = express();
+
+// Trust proxy for secure cookies behind reverse proxy
+app.set("trust proxy", 1);
+
+// Verificar SESSION_SECRET en producción
+if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET must be set in production");
+}
 
 // Configurar sesiones con PostgreSQL
 const PgSession = connectPgSimple(session);
@@ -16,13 +31,14 @@ app.use(
       tableName: "session",
       createTableIfMissing: true,
     }),
-    secret: process.env.SESSION_SECRET || "neurolex-secret-key-change-in-production",
+    secret: process.env.SESSION_SECRET || "neurolex-secret-key-dev-only",
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 días
+      sameSite: "lax",
     },
   })
 );

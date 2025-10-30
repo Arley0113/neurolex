@@ -34,18 +34,16 @@ const categoriaColors: Record<string, string> = {
 export default function ForoDetalle() {
   const { id } = useParams();
   const [, navigate] = useLocation();
-  const userId = localStorage.getItem("userId");
   const { toast } = useToast();
   const [comentario, setComentario] = useState("");
 
   const { data: user } = useQuery({
-    queryKey: ["/api/users/me", userId],
-    enabled: !!userId,
+    queryKey: ["/api/users/me"],
   });
 
   const { data: tokensBalance } = useQuery({
-    queryKey: ["/api/tokens", userId],
-    enabled: !!userId,
+    queryKey: ["/api/tokens"],
+    enabled: !!user,
   });
 
   const { data: debate, isLoading } = useQuery<DebateConAutor>({
@@ -60,12 +58,11 @@ export default function ForoDetalle() {
 
   const addCommentMutation = useMutation({
     mutationFn: async (contenido: string) => {
-      if (!userId) {
+      if (!user) {
         throw new Error("Debes iniciar sesión para comentar");
       }
       return apiRequest("POST", `/api/debates/${id}/comments`, {
         contenido,
-        autorId: userId,
       });
     },
     onSuccess: () => {
@@ -77,7 +74,7 @@ export default function ForoDetalle() {
       queryClient.invalidateQueries({ queryKey: ["/api/debates", id, "comments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/debates", id] });
       queryClient.invalidateQueries({ queryKey: ["/api/debates"] }); // Invalida listado de debates
-      queryClient.invalidateQueries({ queryKey: ["/api/users/me", userId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users/me"] });
     },
     onError: (error: Error) => {
       toast({
