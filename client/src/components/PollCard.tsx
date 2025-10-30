@@ -28,7 +28,7 @@ export function PollCard({
   id,
   pregunta,
   descripcion,
-  opciones,
+  opciones = [],
   totalVotos,
   fechaFin,
   hasVoted = false,
