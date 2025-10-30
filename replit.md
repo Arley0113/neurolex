@@ -132,6 +132,39 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 30, 2025 - Página de Detalle de Propuestas Implementada
+
+**Problema Resuelto:**
+- ❌ Al hacer clic en "Ver Detalles" de una propuesta, se redirigía a página 404
+- ❌ No existía ruta `/propuestas/:id` registrada en App.tsx
+- ❌ No existía componente PropuestaDetalle.tsx
+
+**Implementación:**
+- Creada página `client/src/pages/PropuestaDetalle.tsx`:
+  - Sigue el patrón de ForoDetalle.tsx para consistencia
+  - Usa `useParams` para obtener el ID de la propuesta
+  - Carga datos de propuesta con query `["/api/proposals", id]`
+  - Carga comentarios con query `["/api/comments/proposal", id]`
+  - Muestra título, descripción, categoría, estado, apoyos (TP/TA)
+  - Sección de comentarios con formulario para agregar nuevos
+  - Botón "Apoyar con 1 TP" con validación de tokens
+  - Botón "Donar Tokens de Apoyo" abre modal de donación
+  - Botón "Volver a Propuestas" para navegación
+- Registrada ruta `/propuestas/:id` en `client/src/App.tsx`
+  - Ruta específica colocada antes de `/propuestas` para correcta captura
+
+**Features Implementadas:**
+- Navegación completa desde listado de propuestas a página de detalle
+- Visualización completa de información de propuesta
+- Sistema de comentarios integrado
+- Apoyo con tokens desde página de detalle
+- Sistema de donación desde página de detalle
+- Estados de carga y error manejados correctamente
+
+**Testing:**
+- Test e2e completo ejecutado exitosamente
+- Verificado: navegación a /propuestas, clic en "Ver Detalles", carga de página de detalle, visualización de título/descripción/badges, sección de comentarios, navegación de regreso
+
 ### October 30, 2025 - Sistema de Votación en Sondeos Implementado
 
 **Backend Implementation:**
