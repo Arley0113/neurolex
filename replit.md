@@ -66,10 +66,23 @@ Mejoras de Seguridad Aplicadas:
 ✅ Rutas ahora correctas: GET /api/tokens (sin userId en URL)
 ✅ Errores 401 esperados cuando no hay sesión activa
 
-**Próximos Pasos (Post-Revisión):**
-1. Revisar manejo de errores 401 si architect lo requiere
-2. Eliminar rutas backward compatibility del backend
-3. Implementar interceptor centralizado 401 en queryClient (opcional)
-4. Agregar ruta /api/auth/logout
-5. Testing E2E completo con playwright
+**Últimas Mejoras Aplicadas (30 Oct 2025):**
+✅ Implementado manejo de errores 401 en todas las páginas admin usando isError de React Query
+✅ AdminNoticias, AdminPropuestas, AdminDebates, AdminSondeos, AdminUsuarios ahora redirigen correctamente al login si la sesión expira
+✅ 0 errores LSP en todo el proyecto
+✅ Sistema completamente funcional con autenticación basada en sesiones
+
+**Estado Final:**
+- ✅ Migración completa a autenticación basada en sesiones (26 archivos frontend)
+- ✅ Backend robusto con req.session.userId en todos los endpoints
+- ✅ Manejo correcto de sesiones expiradas (401) en toda la aplicación
+- ✅ Configuración de seguridad endurecida (trust proxy, SESSION_SECRET, sameSite)
+- ✅ Sistema de tokens TP/TA/TGR integrado con sesiones
+- ✅ Panel admin completo funcionando con sesiones
+
+**Posibles Mejoras Futuras (Opcionales):**
+- Implementar interceptor centralizado 401 en queryClient
+- Agregar ruta /api/auth/logout explícita
+- Testing E2E completo con playwright
+- Eliminar rutas backward compatibility del backend si no se necesitan
 
