@@ -46,7 +46,7 @@ export default function Sondeos() {
       if (!userId) {
         throw new Error("Debes iniciar sesión para votar");
       }
-      return apiRequest(`/api/polls/${pollId}/vote`, "POST", { userId, optionId });
+      return apiRequest("POST", `/api/polls/${pollId}/vote`, { userId, optionId });
     },
     onSuccess: () => {
       // Invalidar queries para actualizar los datos
@@ -84,8 +84,18 @@ export default function Sondeos() {
 
   // Filtrar sondeos activos y cerrados basándose en la fecha de finalización
   const now = new Date();
-  const sondeosActivos = allPolls.filter((poll: any) => new Date(poll.fechaFin) > now);
-  const sondeosCerrados = allPolls.filter((poll: any) => new Date(poll.fechaFin) <= now);
+  const sondeosActivos = allPolls.filter((poll: any) => {
+    // Si no tiene fechaFin, está siempre activo
+    if (!poll.fechaFin) return true;
+    // Si tiene fechaFin, verificar que sea mayor a ahora
+    return new Date(poll.fechaFin) > now;
+  });
+  const sondeosCerrados = allPolls.filter((poll: any) => {
+    // Si no tiene fechaFin, nunca está cerrado
+    if (!poll.fechaFin) return false;
+    // Si tiene fechaFin, está cerrado si es menor o igual a ahora
+    return new Date(poll.fechaFin) <= now;
+  });
 
   const estadisticasGenerales = [
     { label: "Sondeos Activos", valor: String(sondeosActivos.length), icon: BarChart3, color: "text-blue-600" },
