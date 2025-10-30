@@ -217,7 +217,7 @@ export default function NoticiaDetalle() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Formulario para nuevo comentario */}
-              {userId ? (
+              {user ? (
                 <form onSubmit={handleSubmitComment} className="space-y-4">
                   <Textarea
                     placeholder="Escribe tu comentario..."
