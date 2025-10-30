@@ -33,17 +33,17 @@ export default function AdminNoticias() {
   });
 
   // Cargar usuario
-  const { data: user } = useQuery<any>({
+  const { data: user, isError } = useQuery<any>({
     queryKey: ["/api/users/me"],
   });
 
-  // Redirigir al login si no está autenticado
+  // Redirigir al login si no está autenticado o sesión expirada
   useEffect(() => {
-    if (user === undefined) return; // Esperando carga
-    if (!user) {
+    if (user === undefined && !isError) return; // Esperando carga
+    if (!user || isError) {
       setLocation("/login");
     }
-  }, [user, setLocation]);
+  }, [user, isError, setLocation]);
 
   // Cargar noticias
   const { data: news = [], isLoading } = useQuery<any[]>({

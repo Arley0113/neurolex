@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -26,11 +26,12 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MessageSquare, Plus, Pencil, Trash2, Eye, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default function AdminDebates() {
+  const [, setLocation] = useLocation();
   const { toast} = useToast();
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -43,9 +44,17 @@ export default function AdminDebates() {
   });
 
   // Cargar usuario actual
-  const { data: user } = useQuery<any>({
+  const { data: user, isError } = useQuery<any>({
     queryKey: ["/api/users/me"],
   });
+
+  // Redirigir al login si no está autenticado o sesión expirada
+  useEffect(() => {
+    if (user === undefined && !isError) return;
+    if (!user || isError) {
+      setLocation("/login");
+    }
+  }, [user, isError, setLocation]);
 
   // Cargar debates
   const { data: debates = [], isLoading } = useQuery<any[]>({

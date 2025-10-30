@@ -67,16 +67,16 @@ export default function AdminPropuestas() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProposal, setEditingProposal] = useState<any>(null);
 
-  const { data: user } = useQuery<any>({
+  const { data: user, isError } = useQuery<any>({
     queryKey: ["/api/users/me"],
   });
 
   useEffect(() => {
-    if (user === undefined) return; // Esperando carga
-    if (!user) {
+    if (user === undefined && !isError) return; // Esperando carga
+    if (!user || isError) {
       setLocation("/login");
     }
-  }, [user, setLocation]);
+  }, [user, isError, setLocation]);
 
   const { data: proposals, isLoading } = useQuery<any[]>({
     queryKey: ["/api/proposals"],

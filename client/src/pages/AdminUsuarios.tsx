@@ -33,16 +33,16 @@ export default function AdminUsuarios() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
-  const { data: currentUser } = useQuery<any>({
+  const { data: currentUser, isError } = useQuery<any>({
     queryKey: ["/api/users/me"],
   });
 
   useEffect(() => {
-    if (currentUser === undefined) return; // Esperando carga
-    if (!currentUser) {
+    if (currentUser === undefined && !isError) return; // Esperando carga
+    if (!currentUser || isError) {
       setLocation("/login");
     }
-  }, [currentUser, setLocation]);
+  }, [currentUser, isError, setLocation]);
 
   const { data: users, isLoading } = useQuery<any[]>({
     queryKey: ["/api/admin/users"],
