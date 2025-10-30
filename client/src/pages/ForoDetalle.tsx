@@ -71,11 +71,13 @@ export default function ForoDetalle() {
     onSuccess: () => {
       toast({
         title: "Comentario publicado",
-        description: "Tu comentario se ha agregado correctamente",
+        description: "Tu comentario se ha agregado correctamente. +2 karma",
       });
       setComentario("");
       queryClient.invalidateQueries({ queryKey: ["/api/debates", id, "comments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/debates", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/debates"] }); // Invalida listado de debates
+      queryClient.invalidateQueries({ queryKey: ["/api/users/me", userId] });
     },
     onError: (error: Error) => {
       toast({
