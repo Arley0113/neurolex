@@ -132,6 +132,40 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 30, 2025 - Sistema CRUD Completo para Sondeos
+
+**Backend Implementation:**
+- Agregados métodos de edición y eliminación en `server/storage.ts`:
+  - `updatePoll(id, data)`: Actualiza un sondeo existente
+  - `deletePoll(id)`: Elimina un sondeo
+- Endpoints administrativos completos:
+  - `POST /api/admin/polls`: Crea sondeo con opciones
+  - `PUT /api/admin/polls/:id`: Edita sondeo existente
+  - `DELETE /api/admin/polls/:id`: Elimina sondeo
+- Conversión automática de fechas: `fechaFin` string → Date o null en backend
+
+**Frontend Implementation:**
+- `client/src/pages/AdminSondeos.tsx`: UI completa de administración
+  - Botones de editar y eliminar en cada card de sondeo
+  - Modal de edición con formulario completo
+  - Confirmación antes de eliminar
+  - Invalidación correcta del cache de TanStack Query
+- Corrección de nombres de campos para alinear con schema DB:
+  - `titulo` → `pregunta`
+  - `fechaCierre` → `fechaFin`
+
+**Features Implementadas:**
+- Edición completa de sondeos desde panel admin
+- Eliminación de sondeos con confirmación
+- Toasts de éxito/error apropiados
+- Actualización automática de la lista tras operaciones CRUD
+- Manejo correcto de tipos fecha (string → Date)
+
+**Testing:**
+- Test e2e completo ejecutado exitosamente
+- Verificado: creación, edición y eliminación de sondeos
+- Confirmada correcta invalidación de cache y actualización de UI
+
 ### October 29, 2025 - Sistema de Debates/Foro Completado
 
 **Backend Implementation:**

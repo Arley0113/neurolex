@@ -956,7 +956,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Crear sondeo completo con opciones (Admin)
   app.post("/api/admin/polls", isAdmin, async (req: Request, res: Response) => {
     try {
-      console.log("POST /api/admin/polls - Request body:", JSON.stringify(req.body, null, 2));
       const { adminId, opciones, fechaFin, ...pollData } = req.body;
       
       // Convertir fechaFin de string a Date o null
@@ -967,17 +966,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fechaFin: parsedFechaFin,
       };
       
-      console.log("Creating poll with data:", JSON.stringify(finalPollData, null, 2));
-      console.log("Options to create:", opciones);
-      
       // Crear el sondeo
       const poll = await storage.createPoll(finalPollData);
-      console.log("Poll created successfully:", poll.id);
       
       // Crear las opciones
       if (opciones && Array.isArray(opciones)) {
         for (const opcion of opciones) {
-          console.log("Creating option:", opcion);
           await storage.createPollOption({
             pollId: poll.id,
             texto: opcion,
@@ -985,11 +979,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      console.log("Poll creation complete, returning poll");
       res.status(201).json(poll);
     } catch (error) {
       console.error("Error al crear sondeo:", error);
-      console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
       res.status(500).json({ error: "Error al crear sondeo" });
     }
   });
