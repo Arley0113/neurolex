@@ -679,6 +679,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Obtener los sondeos en los que el usuario ha votado
+  app.get("/api/polls/user/:userId/voted", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      const polls = await storage.getAllPolls();
+      
+      // Verificar cada sondeo para ver si el usuario ha votado
+      const votedPolls = await Promise.all(
+        polls.map(async (poll) => {
+          const hasVoted = await storage.hasUserVoted(userId, poll.id);
+          return hasVoted ? poll.id : null;
+        })
+      );
+      
+      // Filtrar los nulls y devolver solo los IDs de sondeos votados
+      const votedPollIds = votedPolls.filter((id) => id !== null);
+      res.json(votedPollIds);
+    } catch (error) {
+      console.error("Error al obtener votos del usuario:", error);
+      res.status(500).json({ error: "Error al obtener votos" });
+    }
+  });
+
   // ===========================================================================
   // COMENTARIOS
   // ===========================================================================
