@@ -1,13 +1,24 @@
 import { useRoute, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Calendar, User } from "lucide-react";
-import { format } from "date-fns";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { Loader2, ArrowLeft, Calendar, User, MessageSquare, Send } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import type { Comment } from "@shared/schema";
+
+interface ComentarioConAutor extends Comment {
+  autorNombre?: string;
+}
 
 const tipoColors: Record<string, string> = {
   nacional: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
@@ -23,6 +34,8 @@ export default function NoticiaDetalle() {
   const noticiaId = params?.id;
 
   const userId = localStorage.getItem("userId");
+  const { toast } = useToast();
+  const [comentario, setComentario] = useState("");
 
   const { data: user } = useQuery({
     queryKey: ["/api/users/me", userId],
@@ -38,6 +51,53 @@ export default function NoticiaDetalle() {
     queryKey: ["/api/news", noticiaId],
     enabled: !!noticiaId,
   });
+
+  const { data: comentarios = [] } = useQuery<ComentarioConAutor[]>({
+    queryKey: ["/api/comments/news", noticiaId],
+    enabled: !!noticiaId,
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: async (contenido: string) => {
+      if (!userId) {
+        throw new Error("Debes iniciar sesión para comentar");
+      }
+      return apiRequest("POST", `/api/comments`, {
+        contenido,
+        autorId: userId,
+        noticiaId: noticiaId,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Comentario publicado",
+        description: "Tu comentario se ha agregado correctamente",
+      });
+      setComentario("");
+      queryClient.invalidateQueries({ queryKey: ["/api/comments/news", noticiaId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/news", noticiaId] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!comentario.trim()) {
+      toast({
+        title: "Error",
+        description: "El comentario no puede estar vacío",
+        variant: "destructive",
+      });
+      return;
+    }
+    addCommentMutation.mutate(comentario);
+  };
 
   if (isLoading) {
     return (
@@ -149,6 +209,86 @@ export default function NoticiaDetalle() {
               </p>
             </div>
           </article>
+
+          {/* Sección de comentarios */}
+          <Card className="mt-8">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Comentarios ({comentarios.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Formulario para nuevo comentario */}
+              {userId ? (
+                <form onSubmit={handleSubmitComment} className="space-y-4">
+                  <Textarea
+                    placeholder="Escribe tu comentario..."
+                    value={comentario}
+                    onChange={(e) => setComentario(e.target.value)}
+                    className="min-h-[100px]"
+                    data-testid="textarea-comment"
+                  />
+                  <div className="flex justify-end">
+                    <Button 
+                      type="submit" 
+                      disabled={addCommentMutation.isPending || !comentario.trim()}
+                      data-testid="button-post-comment"
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      {addCommentMutation.isPending ? "Publicando..." : "Publicar Comentario"}
+                    </Button>
+                  </div>
+                </form>
+              ) : (
+                <div className="text-center p-6 bg-muted rounded-lg">
+                  <p className="text-muted-foreground mb-4">
+                    Debes iniciar sesión para comentar en esta noticia
+                  </p>
+                  <Link href="/login">
+                    <Button>Iniciar Sesión</Button>
+                  </Link>
+                </div>
+              )}
+
+              <Separator />
+
+              {/* Lista de comentarios */}
+              <div className="space-y-6">
+                {comentarios.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    No hay comentarios aún. ¡Sé el primero en comentar!
+                  </p>
+                ) : (
+                  comentarios.map((comentario) => (
+                    <div key={comentario.id} className="flex gap-4" data-testid={`comment-${comentario.id}`}>
+                      <Avatar className="h-10 w-10 flex-shrink-0">
+                        <AvatarFallback>
+                          {comentario.autorNombre?.charAt(0).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm">
+                            {comentario.autorNombre || "Usuario"}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {comentario.createdAt
+                              ? formatDistanceToNow(new Date(comentario.createdAt), {
+                                  addSuffix: true,
+                                  locale: es,
+                                })
+                              : ""}
+                          </span>
+                        </div>
+                        <p className="text-sm whitespace-pre-wrap">{comentario.contenido}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Noticias relacionadas */}
           <div className="mt-12 pt-8 border-t">
