@@ -132,6 +132,45 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### October 30, 2025 - Sistema de Votación en Sondeos Implementado
+
+**Backend Implementation:**
+- Agregado endpoint `GET /api/polls/user/:userId/voted`:
+  - Devuelve array de IDs de sondeos en los que el usuario ha votado
+  - Usado para marcar hasVoted en el frontend
+- Endpoint de votación existente: `POST /api/polls/:pollId/vote`
+  - Valida que el usuario no haya votado previamente
+  - Otorga 10 TP y 5 puntos de karma por votar
+  - Actualiza contador de votos de la opción seleccionada
+
+**Frontend Implementation:**
+- `client/src/pages/Sondeos.tsx`: Sistema completo de votación
+  - Query para obtener sondeos en los que el usuario ha votado
+  - Mutation para registrar votos con invalidación automática de cache
+  - Función handleVote que maneja el proceso de votación
+  - PollCard recibe props onVote y hasVoted correctamente
+  - Lógica de filtrado mejorada: sondeos sin fechaFin se consideran siempre activos
+- Corrección de orden de parámetros en apiRequest: `(method, url, data)`
+
+**Features Implementadas:**
+- Usuarios pueden votar en sondeos activos
+- Sistema de recompensas: 10 TP + 5 karma por voto
+- Prevención de votos duplicados
+- Badge "Ya has votado" aparece después de votar
+- Opciones se deshabilitan automáticamente después de votar
+- Contador de votos se actualiza en tiempo real
+- Toast de confirmación al votar exitosamente
+
+**Bug Fixes:**
+- Corregido: endpoints GET /api/polls devolvían `options` en lugar de `opciones`
+- Corregido: PollCard crasheaba si opciones era undefined
+- Corregido: orden incorrecto de parámetros en llamada a apiRequest
+- Corregido: lógica de filtrado para sondeos sin fechaFin
+
+**Testing:**
+- Test e2e completo ejecutado exitosamente
+- Verificado: creación de sondeo, votación, actualización de TP/karma, deshabilitación de opciones
+
 ### October 30, 2025 - Sistema CRUD Completo para Sondeos
 
 **Backend Implementation:**
