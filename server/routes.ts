@@ -956,14 +956,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Crear sondeo completo con opciones (Admin)
   app.post("/api/admin/polls", isAdmin, async (req: Request, res: Response) => {
     try {
-      const { adminId, opciones, ...pollData } = req.body;
+      console.log("POST /api/admin/polls - Request body:", JSON.stringify(req.body, null, 2));
+      const { adminId, opciones, fechaFin, ...pollData } = req.body;
+      
+      // Convertir fechaFin de string a Date o null
+      const parsedFechaFin = fechaFin && fechaFin.trim() !== "" ? new Date(fechaFin) : null;
+      
+      const finalPollData = {
+        ...pollData,
+        fechaFin: parsedFechaFin,
+      };
+      
+      console.log("Creating poll with data:", JSON.stringify(finalPollData, null, 2));
+      console.log("Options to create:", opciones);
       
       // Crear el sondeo
-      const poll = await storage.createPoll(pollData);
+      const poll = await storage.createPoll(finalPollData);
+      console.log("Poll created successfully:", poll.id);
       
       // Crear las opciones
       if (opciones && Array.isArray(opciones)) {
         for (const opcion of opciones) {
+          console.log("Creating option:", opcion);
           await storage.createPollOption({
             pollId: poll.id,
             texto: opcion,
@@ -971,9 +985,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      console.log("Poll creation complete, returning poll");
       res.status(201).json(poll);
     } catch (error) {
       console.error("Error al crear sondeo:", error);
+      console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
       res.status(500).json({ error: "Error al crear sondeo" });
     }
   });
@@ -982,9 +998,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/admin/polls/:id", isAdmin, async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { adminId, ...pollData } = req.body;
+      const { adminId, fechaFin, ...pollData } = req.body;
       
-      const poll = await storage.updatePoll(id, pollData);
+      // Convertir fechaFin de string a Date o null si está presente
+      const finalPollData: any = { ...pollData };
+      if (fechaFin !== undefined) {
+        finalPollData.fechaFin = fechaFin && fechaFin.trim() !== "" ? new Date(fechaFin) : null;
+      }
+      
+      const poll = await storage.updatePoll(id, finalPollData);
       if (!poll) {
         return res.status(404).json({ error: "Sondeo no encontrado" });
       }

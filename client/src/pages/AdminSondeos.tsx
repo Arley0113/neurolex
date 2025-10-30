@@ -43,9 +43,9 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 const pollSchema = z.object({
-  titulo: z.string().min(5, "El título debe tener al menos 5 caracteres"),
+  pregunta: z.string().min(5, "La pregunta debe tener al menos 5 caracteres"),
   descripcion: z.string().min(10, "La descripción debe tener al menos 10 caracteres"),
-  fechaCierre: z.string().optional(),
+  fechaFin: z.string().optional(),
 });
 
 type PollFormData = z.infer<typeof pollSchema>;
@@ -77,9 +77,9 @@ export default function AdminSondeos() {
   const form = useForm<PollFormData>({
     resolver: zodResolver(pollSchema),
     defaultValues: {
-      titulo: "",
+      pregunta: "",
       descripcion: "",
-      fechaCierre: "",
+      fechaFin: "",
     },
   });
 
@@ -280,10 +280,10 @@ export default function AdminSondeos() {
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                     <FormField
                       control={form.control}
-                      name="titulo"
+                      name="pregunta"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Título del Sondeo</FormLabel>
+                          <FormLabel>Pregunta del Sondeo</FormLabel>
                           <FormControl>
                             <Input placeholder="¿Cuál es tu opinión sobre...?" {...field} data-testid="input-poll-title" />
                           </FormControl>
@@ -314,7 +314,7 @@ export default function AdminSondeos() {
 
                     <FormField
                       control={form.control}
-                      name="fechaCierre"
+                      name="fechaFin"
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Fecha de Cierre (Opcional)</FormLabel>
@@ -401,7 +401,7 @@ export default function AdminSondeos() {
                       <Card key={poll.id} className="hover-elevate">
                         <CardHeader className="pb-3">
                           <div className="flex items-start justify-between gap-2">
-                            <CardTitle className="text-base line-clamp-1">{poll.titulo}</CardTitle>
+                            <CardTitle className="text-base line-clamp-1">{poll.pregunta}</CardTitle>
                             <div className="flex gap-2 flex-shrink-0">
                               <Badge variant={poll.activo ? "default" : "secondary"}>
                                 {poll.activo ? "Activo" : "Cerrado"}
@@ -414,7 +414,7 @@ export default function AdminSondeos() {
                             {poll.descripcion}
                           </p>
                           <div className="text-xs text-muted-foreground">
-                            Creado: {format(new Date(poll.fechaCreacion), "dd MMM yyyy", { locale: es })}
+                            Creado: {format(new Date(poll.createdAt || poll.fechaInicio), "dd MMM yyyy", { locale: es })}
                           </div>
                           <div className="flex gap-2">
                             <Link href="/sondeos" className="flex-1">
@@ -473,14 +473,14 @@ export default function AdminSondeos() {
               <form onSubmit={form.handleSubmit(handleUpdatePoll)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="titulo"
+                  name="pregunta"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Título del Sondeo</FormLabel>
+                      <FormLabel>Pregunta del Sondeo</FormLabel>
                       <FormControl>
                         <Input 
                           {...field} 
-                          defaultValue={editingPoll.titulo}
+                          defaultValue={editingPoll.pregunta}
                           data-testid="input-edit-poll-title" 
                         />
                       </FormControl>
@@ -511,7 +511,7 @@ export default function AdminSondeos() {
 
                 <FormField
                   control={form.control}
-                  name="fechaCierre"
+                  name="fechaFin"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Fecha de Cierre (Opcional)</FormLabel>
@@ -519,7 +519,7 @@ export default function AdminSondeos() {
                         <Input 
                           type="date" 
                           {...field}
-                          defaultValue={editingPoll.fechaCierre ? editingPoll.fechaCierre.split('T')[0] : ""}
+                          defaultValue={editingPoll.fechaFin ? editingPoll.fechaFin.split('T')[0] : ""}
                           data-testid="input-edit-poll-close-date" 
                         />
                       </FormControl>
