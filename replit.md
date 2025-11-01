@@ -86,3 +86,30 @@ Mejoras de Seguridad Aplicadas:
 - Testing E2E completo con playwright
 - Eliminar rutas backward compatibility del backend si no se necesitan
 
+---
+
+## **Configuración Local Completada (1 Nov 2025):**
+
+✅ **Aplicación funcionando en PC local** con PostgreSQL nativo
+✅ **Cambio de Neon Serverless a PostgreSQL local** en `server/db.ts`:
+  - Cambiado de `@neondatabase/serverless` a `pg` (node-postgres)
+  - Cambiado de `drizzle-orm/neon-serverless` a `drizzle-orm/node-postgres`
+  - Eliminada dependencia de WebSocket (ws)
+✅ **Blockchain configurado con fallback**: `server/blockchain-verifier.ts` maneja ausencia de INFURA_API_KEY gracefully
+✅ **Variables de entorno locales**:
+  - DATABASE_URL para PostgreSQL local
+  - SESSION_SECRET generado aleatoriamente
+  - INFURA_API_KEY opcional para funciones blockchain
+
+**Archivos modificados para compatibilidad local:**
+- `server/db.ts`: Configuración PostgreSQL nativa sin WebSocket
+- `server/index.ts`: Importa `pool` en lugar de `db` para sesiones
+- `server/blockchain-verifier.ts`: Provider opcional con manejo de errores
+- `package.json`: Agregados `cross-env`, `dotenv`, `pg`, `@types/pg`
+
+**Requisitos para desarrollo local:**
+- Node.js 18+
+- PostgreSQL 14+
+- Archivo `.env` con DATABASE_URL, SESSION_SECRET
+- (Opcional) INFURA_API_KEY para funciones blockchain
+
