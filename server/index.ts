@@ -4,7 +4,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { db } from "./db";
+import { pool } from "./db";
 
 // Extender tipos de sesión para TypeScript
 declare module "express-session" {
@@ -28,7 +28,7 @@ const PgSession = connectPgSimple(session);
 app.use(
   session({
     store: new PgSession({
-      pool: db,
+      pool: pool,
       tableName: "session",
       createTableIfMissing: true,
     }),
