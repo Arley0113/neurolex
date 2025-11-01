@@ -2,8 +2,20 @@
 import { JsonRpcProvider, TransactionResponse } from "ethers";
 import { BLOCKCHAIN_CONFIG, calculateETHPrice } from "../shared/blockchain-config";
 
-// Configurar provider de Sepolia
-const provider = new JsonRpcProvider("https://sepolia.infura.io/v3/");
+// Configurar provider de Sepolia (puede fallar si no hay API key, es opcional)
+let provider: JsonRpcProvider | null = null;
+
+try {
+  // Usar el provider solo si hay API key configurada
+  const infuraKey = process.env.INFURA_API_KEY || "";
+  if (infuraKey) {
+    provider = new JsonRpcProvider(`https://sepolia.infura.io/v3/${infuraKey}`);
+  } else {
+    console.warn("⚠️  INFURA_API_KEY no configurada. Las funciones blockchain estarán deshabilitadas.");
+  }
+} catch (error) {
+  console.warn("⚠️  No se pudo conectar al provider blockchain:", error);
+}
 
 // Caché de transacciones verificadas (evitar duplicados)
 const verifiedTxHashes = new Set<string>();
@@ -29,6 +41,14 @@ export async function verifyTransaction(
   expectedFrom: string
 ): Promise<VerificationResult> {
   try {
+    // 0. Verificar que el provider blockchain esté disponible
+    if (!provider) {
+      return {
+        valid: false,
+        error: "Servicio blockchain temporalmente no disponible. Contacta al administrador.",
+      };
+    }
+
     // 1. Validar formato del hash
     if (!txHash || !txHash.startsWith("0x") || txHash.length !== 66) {
       return {
