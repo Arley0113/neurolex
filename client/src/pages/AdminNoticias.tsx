@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Newspaper, Plus, Pencil, Trash2, Loader2, ArrowLeft, Eye } from "lucide-react";
+import { Newspaper, Plus, Pencil, Trash2, Loader2, ArrowLeft, Eye, Download } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -168,13 +168,21 @@ export default function AdminNoticias() {
               </div>
             </div>
             
-            <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
-              <DialogTrigger asChild>
-                <Button data-testid="button-create-news">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nueva Noticia
+            <div className="flex gap-2">
+              <Link href="/admin/fuentes">
+                <Button variant="outline" data-testid="button-manage-sources">
+                  <Download className="h-4 w-4 mr-2" />
+                  Fuentes & Scraping
                 </Button>
-              </DialogTrigger>
+              </Link>
+              
+              <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
+                <DialogTrigger asChild>
+                  <Button data-testid="button-create-news">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nueva Noticia
+                  </Button>
+                </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
@@ -283,6 +291,7 @@ export default function AdminNoticias() {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {/* Lista de Noticias */}
