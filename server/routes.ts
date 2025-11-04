@@ -3,7 +3,7 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertNewsSchema, insertProposalSchema, insertPollSchema, insertPollOptionSchema, insertDebateSchema, insertCommentSchema, insertContactSchema } from "@shared/schema";
+import { insertUserSchema, insertNewsSchema, insertNewsSourceSchema, insertProposalSchema, insertPollSchema, insertPollOptionSchema, insertDebateSchema, insertCommentSchema, insertContactSchema } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import bcrypt from "bcrypt";
@@ -416,6 +416,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error al obtener karma:", error);
       res.status(500).json({ error: "Error al obtener historial de karma" });
+    }
+  });
+
+  // ===========================================================================
+  // FUENTES DE NOTICIAS
+  // ===========================================================================
+
+  // Obtener todas las fuentes de noticias
+  app.get("/api/news-sources", async (req: Request, res: Response) => {
+    try {
+      const sources = await storage.getAllNewsSources();
+      res.json(sources);
+    } catch (error) {
+      console.error("Error al obtener fuentes:", error);
+      res.status(500).json({ error: "Error al obtener fuentes de noticias" });
+    }
+  });
+
+  // Obtener una fuente por ID
+  app.get("/api/news-sources/:id", async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const source = await storage.getNewsSourceById(id);
+      
+      if (!source) {
+        return res.status(404).json({ error: "Fuente no encontrada" });
+      }
+
+      res.json(source);
+    } catch (error) {
+      console.error("Error al obtener fuente:", error);
+      res.status(500).json({ error: "Error al obtener fuente" });
+    }
+  });
+
+  // Crear nueva fuente (solo admins)
+  app.post("/api/news-sources", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+      }
+
+      const validation = validateRequest(insertNewsSourceSchema, req.body);
+      if (!validation.success) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const source = await storage.createNewsSource(validation.data!);
+      res.status(201).json(source);
+    } catch (error) {
+      console.error("Error al crear fuente:", error);
+      res.status(500).json({ error: "Error al crear fuente" });
+    }
+  });
+
+  // Actualizar fuente (solo admins)
+  app.patch("/api/news-sources/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+      }
+
+      const { id } = req.params;
+      const updated = await storage.updateNewsSource(id, req.body);
+      
+      if (!updated) {
+        return res.status(404).json({ error: "Fuente no encontrada" });
+      }
+
+      res.json(updated);
+    } catch (error) {
+      console.error("Error al actualizar fuente:", error);
+      res.status(500).json({ error: "Error al actualizar fuente" });
+    }
+  });
+
+  // Eliminar fuente (solo admins)
+  app.delete("/api/news-sources/:id", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+      }
+
+      const { id } = req.params;
+      await storage.deleteNewsSource(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error al eliminar fuente:", error);
+      res.status(500).json({ error: "Error al eliminar fuente" });
     }
   });
 

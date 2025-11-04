@@ -5,7 +5,8 @@ import {
   tokensBalance, 
   tokenTransactions,
   karmaHistory, 
-  news, 
+  news,
+  newsSources,
   proposals, 
   polls, 
   pollOptions, 
@@ -22,6 +23,8 @@ import {
   type InsertTokenTransaction,
   type News,
   type InsertNews,
+  type NewsSource,
+  type InsertNewsSource,
   type Proposal,
   type InsertProposal,
   type Poll,
@@ -65,6 +68,13 @@ export interface IStorage {
   // Karma
   addKarma(userId: string, cantidad: number, razon: string): Promise<void>;
   getKarmaHistory(userId: string): Promise<KarmaHistory[]>;
+
+  // Fuentes de noticias
+  getAllNewsSources(): Promise<NewsSource[]>;
+  getNewsSourceById(id: string): Promise<NewsSource | undefined>;
+  createNewsSource(sourceData: InsertNewsSource): Promise<NewsSource>;
+  updateNewsSource(id: string, data: Partial<NewsSource>): Promise<NewsSource | undefined>;
+  deleteNewsSource(id: string): Promise<void>;
 
   // Noticias
   getAllNews(): Promise<News[]>;
@@ -247,6 +257,43 @@ export class DatabaseStorage implements IStorage {
       .from(karmaHistory)
       .where(eq(karmaHistory.userId, userId))
       .orderBy(desc(karmaHistory.createdAt));
+  }
+
+  // === FUENTES DE NOTICIAS ===
+  async getAllNewsSources(): Promise<NewsSource[]> {
+    return await db
+      .select()
+      .from(newsSources)
+      .orderBy(desc(newsSources.createdAt));
+  }
+
+  async getNewsSourceById(id: string): Promise<NewsSource | undefined> {
+    const [source] = await db
+      .select()
+      .from(newsSources)
+      .where(eq(newsSources.id, id));
+    return source || undefined;
+  }
+
+  async createNewsSource(sourceData: InsertNewsSource): Promise<NewsSource> {
+    const [source] = await db
+      .insert(newsSources)
+      .values(sourceData)
+      .returning();
+    return source;
+  }
+
+  async updateNewsSource(id: string, data: Partial<NewsSource>): Promise<NewsSource | undefined> {
+    const [source] = await db
+      .update(newsSources)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(newsSources.id, id))
+      .returning();
+    return source || undefined;
+  }
+
+  async deleteNewsSource(id: string): Promise<void> {
+    await db.delete(newsSources).where(eq(newsSources.id, id));
   }
 
   // === NOTICIAS ===
