@@ -565,6 +565,138 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Probar scraping de una fuente (solo admins)
+  app.post("/api/scrape/test", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+      }
+
+      const { sourceId } = req.body;
+      if (!sourceId) {
+        return res.status(400).json({ error: "Se requiere sourceId" });
+      }
+
+      const source = await storage.getNewsSourceById(sourceId);
+      if (!source) {
+        return res.status(404).json({ error: "Fuente no encontrada" });
+      }
+
+      if (!source.activo) {
+        return res.status(400).json({ error: "La fuente está desactivada" });
+      }
+
+      const { scrapeNewsSource, isValidUrl } = await import("./scraper");
+      
+      if (!isValidUrl(source.url)) {
+        return res.status(400).json({ error: "URL de la fuente no válida" });
+      }
+
+      const articles = await scrapeNewsSource({
+        url: source.url,
+        tipo: source.tipo as 'rss' | 'html',
+        selectorTitulo: source.selectorTitulo || undefined,
+        selectorContenido: source.selectorContenido || undefined,
+        selectorImagen: source.selectorImagen || undefined,
+      });
+
+      res.json({
+        success: true,
+        fuente: source.nombre,
+        articulosEncontrados: articles.length,
+        articulos: articles.slice(0, 5), // Devolver solo los primeros 5 para preview
+      });
+    } catch (error: any) {
+      console.error("Error al scrapear fuente:", error);
+      res.status(500).json({ 
+        error: "Error al scrapear la fuente",
+        detalle: error.message 
+      });
+    }
+  });
+
+  // Importar noticias desde una fuente (solo admins)
+  app.post("/api/scrape/import", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const user = await storage.getUser(userId);
+      
+      if (!user?.isAdmin) {
+        return res.status(403).json({ error: "No tienes permisos de administrador" });
+      }
+
+      const { sourceId, limit = 10 } = req.body;
+      if (!sourceId) {
+        return res.status(400).json({ error: "Se requiere sourceId" });
+      }
+
+      const source = await storage.getNewsSourceById(sourceId);
+      if (!source) {
+        return res.status(404).json({ error: "Fuente no encontrada" });
+      }
+
+      if (!source.activo) {
+        return res.status(400).json({ error: "La fuente está desactivada" });
+      }
+
+      const { scrapeNewsSource, isValidUrl } = await import("./scraper");
+      
+      if (!isValidUrl(source.url)) {
+        return res.status(400).json({ error: "URL de la fuente no válida" });
+      }
+
+      const articles = await scrapeNewsSource({
+        url: source.url,
+        tipo: source.tipo as 'rss' | 'html',
+        selectorTitulo: source.selectorTitulo || undefined,
+        selectorContenido: source.selectorContenido || undefined,
+        selectorImagen: source.selectorImagen || undefined,
+      });
+
+      // Importar artículos a la base de datos (limitar cantidad)
+      const articlesToImport = articles.slice(0, Math.min(limit, 20));
+      const importedNews = [];
+
+      for (const article of articlesToImport) {
+        try {
+          const newsData = {
+            titulo: article.titulo,
+            contenido: article.contenido,
+            resumen: article.resumen,
+            imagenUrl: article.imagenUrl,
+            fuente: source.nombre,
+            urlOriginal: article.urlOriginal,
+            sourceId: source.id,
+            tipo: source.categoria as any, // Usar categoría de la fuente como tipo
+            publicadoPor: userId,
+          };
+
+          const news = await storage.createNews(newsData);
+          importedNews.push(news);
+        } catch (error) {
+          console.error("Error al importar artículo:", error);
+          // Continuar con el siguiente artículo
+        }
+      }
+
+      res.json({
+        success: true,
+        fuente: source.nombre,
+        articulosImportados: importedNews.length,
+        articulos: importedNews,
+      });
+    } catch (error: any) {
+      console.error("Error al importar noticias:", error);
+      res.status(500).json({ 
+        error: "Error al importar noticias",
+        detalle: error.message 
+      });
+    }
+  });
+
   // ===========================================================================
   // PROPUESTAS
   // ===========================================================================
