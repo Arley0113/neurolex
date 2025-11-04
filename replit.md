@@ -113,6 +113,11 @@ Mejoras de Seguridad Aplicadas:
 - Archivo `.env` con DATABASE_URL, SESSION_SECRET
 - (Opcional) INFURA_API_KEY para funciones blockchain
 
+**Archivos de configuración para PC (4 Nov 2025):**
+- `.env.example`: Plantilla con variables de entorno necesarias
+- `INSTALACION_PC.md`: Guía completa de instalación paso a paso para PC local
+- Configuración lista para descargar ZIP completo y desplegar en PC
+
 ---
 
 ## **Sistema de Scraping de Noticias (4 Nov 2025):**
