@@ -101,12 +101,13 @@ export default function AdminFuentes() {
 
   const testScrapeMutation = useMutation({
     mutationFn: async (sourceId: string) => {
-      return await apiRequest("/api/scrape/test", "POST", { sourceId });
+      const res = await apiRequest("/api/scrape/test", "POST", { sourceId });
+      return await res.json();
     },
     onSuccess: (data: any) => {
       toast({
         title: `✅ Scraping exitoso - ${data.fuente}`,
-        description: `Se encontraron ${data.articulosEncontrados} artículos`,
+        description: `Se encontraron ${data.articulosEncontrados || 0} artículos`,
       });
       console.log("Artículos encontrados:", data.articulos);
     },
@@ -121,13 +122,14 @@ export default function AdminFuentes() {
 
   const importMutation = useMutation({
     mutationFn: async (sourceId: string) => {
-      return await apiRequest("/api/scrape/import", "POST", { sourceId, limit: 10 });
+      const res = await apiRequest("/api/scrape/import", "POST", { sourceId, limit: 10 });
+      return await res.json();
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/news"] });
       toast({
         title: `✅ Importación exitosa - ${data.fuente}`,
-        description: `Se importaron ${data.articulosImportados} noticias`,
+        description: `Se importaron ${data.articulosImportados || 0} noticias`,
       });
     },
     onError: (error: Error) => {
