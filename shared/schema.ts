@@ -90,6 +90,24 @@ export const karmaHistory = pgTable("karma_history", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Fuentes de noticias para scraping
+export const newsSources = pgTable("news_sources", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  nombre: text("nombre").notNull(), // Nombre de la fuente (ej: "El País")
+  url: text("url").notNull(), // URL del RSS o sitio web
+  categoria: text("categoria").notNull().default("nacional"), // categoria principal
+  tipo: text("tipo").notNull().default("rss"), // "rss" o "html"
+  activo: boolean("activo").notNull().default(true), // si está habilitado para scraping
+  
+  // Selectores CSS para scraping HTML (opcional, solo para tipo "html")
+  selectorTitulo: text("selector_titulo"), // ej: ".article-title"
+  selectorContenido: text("selector_contenido"),
+  selectorImagen: text("selector_imagen"),
+  
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 // Noticias políticas
 export const news = pgTable("news", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -106,6 +124,7 @@ export const news = pgTable("news", {
   // Fuente
   fuente: text("fuente"), // nombre del medio
   urlOriginal: text("url_original"),
+  sourceId: varchar("source_id").references(() => newsSources.id), // enlace a fuente de scraping
   
   // Metadata
   publicadoPor: varchar("publicado_por").references(() => users.id),
@@ -363,6 +382,21 @@ export const selectUserSchema = createSelectSchema(users);
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+// Fuentes de noticias
+export const insertNewsSourceSchema = createInsertSchema(newsSources, {
+  nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+  url: z.string().url("Debe ser una URL válida"),
+  categoria: z.string().min(1, "La categoría es obligatoria"),
+  tipo: z.enum(["rss", "html"]),
+}).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertNewsSource = z.infer<typeof insertNewsSourceSchema>;
+export type NewsSource = typeof newsSources.$inferSelect;
 
 // Noticias
 export const insertNewsSchema = createInsertSchema(news).omit({
