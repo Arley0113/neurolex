@@ -113,3 +113,80 @@ Mejoras de Seguridad Aplicadas:
 - Archivo `.env` con DATABASE_URL, SESSION_SECRET
 - (Opcional) INFURA_API_KEY para funciones blockchain
 
+---
+
+## **Sistema de Scraping de Noticias (4 Nov 2025):**
+
+✅ **Módulo completo de scraping e importación automática de noticias políticas**
+✅ **Gestión de fuentes de noticias** con panel administrativo
+✅ **Importación manual con moderación** - noticias scraped van a estado "borrador"
+
+### Arquitectura del Sistema de Scraping
+
+**Tabla NewsSource (`news_sources`):**
+- `id` (serial): ID único de fuente
+- `nombre` (varchar): Nombre descriptivo de la fuente (ej. "El País - Política")
+- `url` (varchar): URL del feed RSS o página HTML a scrapear
+- `categoriaDefecto` (newsType enum): Categoría por defecto para noticias importadas
+- `activo` (boolean): Si la fuente está activa para scraping
+- `fechaCreacion` (timestamp): Cuándo se agregó la fuente
+
+**Servicio de Scraping (`server/scraper.ts`):**
+- **Motor:** Cheerio para parsing HTML
+- **Estrategia:** Intenta detectar automáticamente estructura de noticias
+- **Selectores usados:**
+  - Títulos: `article h1, article h2, .article-title, h1, h2`
+  - Contenido: `article p, .article-content p, .entry-content p, main p`
+- **Procesamiento:**
+  1. Descarga HTML de la URL configurada
+  2. Extrae títulos y contenidos usando selectores CSS
+  3. Limpia y formatea texto (elimina scripts, espacios extra)
+  4. Genera metadata: `fuente`, `url original`, `categoría`
+- **Manejo de errores:** Devuelve errores descriptivos si falla descarga/parsing
+
+**Endpoints API:**
+- `GET /api/news-sources` - Listar todas las fuentes (admin)
+- `POST /api/news-sources` - Crear nueva fuente (admin)
+- `PATCH /api/news-sources/:id` - Actualizar fuente (admin)
+- `DELETE /api/news-sources/:id` - Eliminar fuente (admin)
+- `POST /api/scrape/test` - Probar scraping de una URL sin guardar (admin)
+- `POST /api/scrape/import` - Importar noticias desde fuente activa (admin)
+
+**Panel Admin de Fuentes (`/admin/fuentes`):**
+- Listado de fuentes con nombre, URL, categoría, estado activo/inactivo
+- Formulario para agregar/editar fuentes
+- Botón "Probar Scraping" para validar antes de importar
+- Botón "Importar Ahora" para ejecutar scraping e importar a borradores
+- Feedback visual de éxito/errores con toast notifications
+
+**Integración con Sistema de Noticias:**
+- Noticias scraped se crean con `estado: "borrador"`
+- Metadata incluye URL original y nombre de fuente
+- Admin debe revisar y publicar manualmente desde AdminNoticias
+- Botón en AdminNoticias enlaza a gestión de fuentes
+
+**Flujo de Trabajo:**
+1. Admin agrega fuente en `/admin/fuentes` (nombre, URL, categoría)
+2. Admin prueba scraping con "Probar Scraping" para validar
+3. Admin ejecuta "Importar Ahora" para traer noticias
+4. Noticias importadas aparecen como borradores en AdminNoticias
+5. Admin revisa, edita si necesario, y publica noticias
+
+**Tecnologías Utilizadas:**
+- `cheerio` (v1.x): Parsing HTML y extracción de contenido
+- Zod: Validación de schemas de fuentes
+- Drizzle ORM: Persistencia de configuración de fuentes
+
+**Limitaciones Actuales:**
+- No hay scraping automático programado (cron jobs)
+- Importación es manual desde panel admin
+- Detección de estructura es básica (no usa IA/ML)
+- Sin deduplicación automática de noticias
+
+**Mejoras Futuras Posibles:**
+- Cron job para scraping automático cada X horas
+- IA/NLP para categorización automática de noticias
+- Deduplicación inteligente basada en similitud de títulos
+- Soporte para autenticación en feeds protegidos
+- Webhooks para notificar nuevas noticias importadas
+
