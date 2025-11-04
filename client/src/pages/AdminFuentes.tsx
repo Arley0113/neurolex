@@ -9,13 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { Plus, Trash2, Edit, TestTube, Download } from "lucide-react";
+import { Plus, Trash2, Edit, TestTube, Download, BookOpen, ChevronDown, ChevronUp, ClipboardList, FlaskConical, Download as DownloadIcon, FileEdit, AlertTriangle, Lightbulb } from "lucide-react";
 import type { NewsSource } from "@shared/schema";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 export default function AdminFuentes() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [formData, setFormData] = useState({
     nombre: "",
     url: "",
@@ -190,6 +192,124 @@ export default function AdminFuentes() {
           <p className="text-muted-foreground">Gestiona las fuentes de scraping de noticias</p>
         </div>
       </div>
+
+      <Collapsible open={tutorialOpen} onOpenChange={setTutorialOpen}>
+        <Card className="bg-primary/5 border-primary/20">
+          <CardHeader>
+            <CollapsibleTrigger asChild>
+              <div 
+                className="flex items-center justify-between cursor-pointer group"
+                data-testid="button-toggle-tutorial"
+              >
+                <div className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-lg">¿Cómo usar el Sistema de Scraping de Noticias?</CardTitle>
+                </div>
+                {tutorialOpen ? (
+                  <ChevronUp className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                )}
+              </div>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-4">
+              <div className="space-y-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <ClipboardList className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-primary">Paso 1: Agregar una Fuente</h3>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                    <li><strong>Nombre:</strong> Ej. "El País - Política", "BBC Mundo"</li>
+                    <li><strong>URL:</strong> Dirección web de la fuente (RSS feed o página HTML)</li>
+                    <li><strong>Categoría:</strong> Tipo de noticias (Nacional, Internacional, etc.)</li>
+                    <li><strong>Tipo:</strong> Selecciona "RSS Feed" para feeds RSS o "HTML" para páginas web</li>
+                    <li><strong>Estado:</strong> Activa la fuente para permitir el scraping</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <FlaskConical className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-primary">Paso 2: Probar el Scraping</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Antes de importar noticias, es importante verificar que el scraping funcione:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                    <li>Haz clic en el botón <strong>Probar</strong> (icono de tubo de ensayo) en la fuente</li>
+                    <li>El sistema intentará extraer noticias de la URL configurada</li>
+                    <li>Verás un mensaje indicando cuántos artículos se encontraron</li>
+                    <li>Revisa la consola del navegador (F12) para ver detalles de los artículos</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <DownloadIcon className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-primary">Paso 3: Importar Noticias</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Una vez verificado que el scraping funciona correctamente:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                    <li>Haz clic en el botón <strong>Importar</strong> (icono de descarga) en la fuente</li>
+                    <li>Las noticias se importarán automáticamente como <strong>borradores</strong></li>
+                    <li>Máximo 10 noticias por importación para evitar sobrecarga</li>
+                    <li>Las noticias incluirán metadatos: fuente, URL original, categoría</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileEdit className="h-5 w-5 text-primary" />
+                    <h3 className="font-semibold text-primary">Paso 4: Revisar y Publicar</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Las noticias importadas requieren moderación antes de publicarse:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-2">
+                    <li>Ve a <strong>Gestión de Noticias</strong> para ver todas las noticias</li>
+                    <li>Las noticias scrapeadas aparecen con estado "borrador"</li>
+                    <li>Puedes <strong>editar</strong> el contenido antes de publicar (título, contenido, categoría)</li>
+                    <li>Las noticias editadas mantienen la referencia a su fuente original</li>
+                  </ul>
+                </div>
+
+                <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-5 w-5 text-yellow-800 dark:text-yellow-200" />
+                    <h3 className="font-semibold text-yellow-800 dark:text-yellow-200">Limitaciones Importantes</h3>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-yellow-700 dark:text-yellow-300 ml-2">
+                    <li>Sitios web modernos pueden tener protección anti-scraping (CORS, CAPTCHA)</li>
+                    <li>No todos los sitios funcionarán por restricciones de seguridad del navegador</li>
+                    <li>RSS Feeds suelen ser más confiables que scraping HTML</li>
+                    <li>El scraping es básico y puede requerir ajustes según el sitio</li>
+                    <li>La importación es manual, no automática (sin cron jobs)</li>
+                  </ul>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lightbulb className="h-5 w-5 text-blue-800 dark:text-blue-200" />
+                    <h3 className="font-semibold text-blue-800 dark:text-blue-200">Consejos</h3>
+                  </div>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-blue-700 dark:text-blue-300 ml-2">
+                    <li>Usa URLs de feeds RSS cuando estén disponibles (más confiables)</li>
+                    <li>Mantén las fuentes activas solo cuando las uses regularmente</li>
+                    <li>Revisa siempre el contenido importado antes de publicar</li>
+                    <li>Puedes editar las noticias scrapeadas libremente</li>
+                    <li>Si una fuente falla, verifica que la URL sea correcta y esté activa</li>
+                  </ul>
+                </div>
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
 
       <Card>
         <CardHeader>

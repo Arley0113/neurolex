@@ -158,6 +158,7 @@ Mejoras de Seguridad Aplicadas:
 - Botón "Probar Scraping" para validar antes de importar
 - Botón "Importar Ahora" para ejecutar scraping e importar a borradores
 - Feedback visual de éxito/errores con toast notifications
+- **Tutorial interactivo collapsible** con guía paso a paso para usar el sistema
 
 **Integración con Sistema de Noticias:**
 - Noticias scraped se crean con `estado: "borrador"`
@@ -189,4 +190,31 @@ Mejoras de Seguridad Aplicadas:
 - Deduplicación inteligente basada en similitud de títulos
 - Soporte para autenticación en feeds protegidos
 - Webhooks para notificar nuevas noticias importadas
+
+---
+
+## **Actualizaciones Recientes (4 Nov 2025):**
+
+✅ **Sistema de Logout Implementado:**
+- Endpoint `POST /api/logout` creado en backend
+- Destruye sesión del servidor con `req.session.destroy()`
+- Limpia cookie de sesión `connect.sid`
+- Frontend (`Navbar.tsx`) llama endpoint y redirige a `/login`
+- Verificación E2E exitosa: rutas protegidas inaccesibles después de logout
+
+✅ **Tutorial Interactivo de Scraping:**
+- Card collapsible en `/admin/fuentes` con guía paso a paso
+- 4 pasos detallados: Agregar fuente, Probar scraping, Importar, Revisar y publicar
+- Secciones de limitaciones y consejos prácticos
+- Diseño visual con colores de advertencia y consejos
+
+✅ **Edición de Noticias Scrapeadas:**
+- Todos los botones de edición habilitados sin restricciones
+- Noticias scrapeadas se pueden editar libremente desde AdminNoticias
+- Mantienen referencia a fuente original después de edición
+
+✅ **Panel de Usuarios - Habilitar Administradores:**
+- Switch de admin conectado a endpoint `PUT /api/admin/users/:id`
+- Backend actualiza campo `isAdmin` correctamente
+- Frontend invalida cache y muestra feedback con toast
 
