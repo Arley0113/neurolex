@@ -22,6 +22,7 @@ import AdminFuentes from "@/pages/AdminFuentes";
 import Noticias from "@/pages/Noticias";
 import NoticiaDetalle from "@/pages/NoticiaDetalle";
 import Propuestas from "@/pages/Propuestas";
+import PropuestaNueva from "@/pages/PropuestaNueva";  // ← NUEVA LÍNEA
 import PropuestaDetalle from "@/pages/PropuestaDetalle";
 import Sondeos from "@/pages/Sondeos";
 import Foro from "@/pages/Foro";
@@ -58,6 +59,7 @@ function Router() {
       {/* Contenido principal */}
       <Route path="/noticias/:id" component={NoticiaDetalle} />
       <Route path="/noticias" component={Noticias} />
+      <Route path="/propuestas/nueva" component={PropuestaNueva} />  {/* ← NUEVA LÍNEA */}
       <Route path="/propuestas/:id" component={PropuestaDetalle} />
       <Route path="/propuestas" component={Propuestas} />
       <Route path="/sondeos" component={Sondeos} />

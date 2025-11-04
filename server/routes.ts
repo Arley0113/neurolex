@@ -748,14 +748,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Crear nueva propuesta
-  app.post("/api/proposals", async (req: Request, res: Response) => {
-    try {
-      const validation = validateRequest(insertProposalSchema, req.body);
-      if (!validation.success) {
-        return res.status(400).json({ error: validation.error });
-      }
+ // Crear nueva propuesta
+app.post("/api/proposals", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = req.session.userId!;
+    const proposalData = { ...req.body, autorId: userId };
+    const validation = validateRequest(insertProposalSchema, proposalData);
+    if (!validation.success) {
+      return res.status(400).json({ error: validation.error });
+    }
 
-      const propuesta = await storage.createProposal(validation.data!);
+    const propuesta = await storage.createProposal(validation.data!);
       
       // Dar karma al usuario por crear propuesta
       await storage.addKarma(propuesta.autorId, 20, "Propuesta creada");
@@ -1394,15 +1397,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Crear debate (Admin)
-  app.post("/api/admin/debates", isAdmin, async (req: Request, res: Response) => {
-    try {
-      const { adminId, ...debateData } = req.body;
-      const validation = validateRequest(insertDebateSchema, debateData);
-      if (!validation.success) {
-        return res.status(400).json({ error: validation.error });
-      }
+  // Crear debate (Admin)
+app.post("/api/admin/debates", isAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.session.userId!;
+    const debateData = { ...req.body, autorId: userId };
+    const validation = validateRequest(insertDebateSchema, debateData);
+    if (!validation.success) {
+      return res.status(400).json({ error: validation.error });
+    }
 
-      const debate = await storage.createDebate(validation.data!);
+    const debate = await storage.createDebate(validation.data!);
       res.status(201).json(debate);
     } catch (error) {
       console.error("Error al crear debate:", error);

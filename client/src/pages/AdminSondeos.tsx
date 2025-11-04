@@ -84,7 +84,7 @@ export default function AdminSondeos() {
 
   const createPollMutation = useMutation({
     mutationFn: async (data: PollFormData & { opciones: string[] }) => {
-      return apiRequest("POST", "/api/admin/polls", data);
+      return apiRequest("/api/admin/polls", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
@@ -107,7 +107,7 @@ export default function AdminSondeos() {
   const updatePollMutation = useMutation({
     mutationFn: async (data: { id: string } & Partial<PollFormData>) => {
       const { id, ...pollData } = data;
-      return apiRequest("PUT", `/api/admin/polls/${id}`, pollData);
+      return apiRequest(`/api/admin/polls/${id}`, "PUT", pollData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
@@ -129,7 +129,7 @@ export default function AdminSondeos() {
 
   const deletePollMutation = useMutation({
     mutationFn: async (pollId: string) => {
-      return apiRequest("DELETE", `/api/admin/polls/${pollId}`);
+      return apiRequest(`/api/admin/polls/${pollId}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/polls"] });
@@ -403,13 +403,48 @@ export default function AdminSondeos() {
                           </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {poll.descripcion}
-                          </p>
-                          <div className="text-xs text-muted-foreground">
-                            Creado: {format(new Date(poll.createdAt || poll.fechaInicio), "dd MMM yyyy", { locale: es })}
-                          </div>
-                          <div className="flex gap-2">
+  <p className="text-sm text-muted-foreground line-clamp-2">
+    {poll.descripcion}
+  </p>
+  
+  {/* Mostrar opciones y votos */}
+  {poll.opciones && poll.opciones.length > 0 && (
+    <div className="space-y-2 pt-2 border-t">
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-medium text-muted-foreground">
+          Resultados
+        </p>
+        <Badge variant="outline" className="text-xs">
+          {poll.opciones.reduce((sum: number, opt: any) => sum + (opt.votos || 0), 0)} votos
+        </Badge>
+      </div>
+      <div className="space-y-1.5">
+        {poll.opciones.map((opcion: any) => {
+          const totalVotos = poll.opciones.reduce((sum: number, opt: any) => sum + (opt.votos || 0), 0);
+          const porcentaje = totalVotos > 0 ? Math.round((opcion.votos / totalVotos) * 100) : 0;
+          return (
+            <div key={opcion.id} className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className="truncate flex-1">{opcion.texto}</span>
+                <span className="font-medium ml-2">{opcion.votos || 0} ({porcentaje}%)</span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-primary transition-all"
+                  style={{ width: `${porcentaje}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  )}
+  
+  <div className="text-xs text-muted-foreground">
+    Creado: {format(new Date(poll.createdAt || poll.fechaInicio), "dd MMM yyyy", { locale: es })}
+  </div>
+  <div className="flex gap-2">
                             <Link href="/sondeos" className="flex-1">
                               <Button
                                 variant="outline"

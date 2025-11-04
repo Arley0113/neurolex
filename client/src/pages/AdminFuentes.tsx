@@ -30,15 +30,10 @@ export default function AdminFuentes() {
   });
 
   const { data: sources = [], isLoading, isError } = useQuery<NewsSource[]>({
-    queryKey: ["/api/news-sources"],
-  });
+  queryKey: ["/api/news-sources"],
+});
 
-  if (isError) {
-    navigate("/login");
-    return null;
-  }
-
-  const createMutation = useMutation({
+const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       return await apiRequest("/api/news-sources", "POST", data);
     },
@@ -180,11 +175,16 @@ export default function AdminFuentes() {
     setEditingId(source.id);
   };
 
-  if (isLoading) {
-    return <div className="p-8">Cargando fuentes...</div>;
-  }
+ if (isError) {
+  navigate("/login");
+  return null;
+}
 
-  return (
+if (isLoading) {
+  return <div className="p-8">Cargando fuentes...</div>;
+}
+
+return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>

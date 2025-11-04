@@ -99,9 +99,9 @@ export default function AdminPropuestas() {
   const createOrUpdateMutation = useMutation({
     mutationFn: async (data: any) => {
       if (editingProposal) {
-        return apiRequest("PUT", `/api/proposals/${editingProposal.id}`, data);
+        return apiRequest(`/api/proposals/${editingProposal.id}`, "PUT", data);
       } else {
-        return apiRequest("POST", "/api/proposals", data);
+        return apiRequest("/api/proposals", "POST", data);
       }
     },
     onSuccess: () => {
@@ -125,7 +125,7 @@ export default function AdminPropuestas() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, estado }: { id: string; estado: string }) => {
-      return apiRequest("PUT", `/api/admin/proposals/${id}/status`, {
+      return apiRequest(`/api/admin/proposals/${id}/status`, "PUT", {
         estado,
       });
     },
@@ -147,7 +147,7 @@ export default function AdminPropuestas() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest("DELETE", `/api/admin/proposals/${id}`);
+      return apiRequest(`/api/admin/proposals/${id}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/proposals"] });

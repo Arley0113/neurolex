@@ -63,7 +63,7 @@ export default function ComprarTokens() {
           });
 
           // 3. Enviar firma al backend para verificar y vincular
-          await apiRequest("POST", "/api/users/link-wallet", {
+          await apiRequest("/api/users/link-wallet", "POST", {
             walletAddress: account,
             message,
             signature,
@@ -95,7 +95,7 @@ export default function ComprarTokens() {
   // Mutación para registrar la compra en el backend
   const purchaseMutation = useMutation({
     mutationFn: async (data: { taAmount: number; ethAmount: string; txHash: string }) => {
-      return apiRequest("POST", "/api/tokens/purchase", data);
+      return apiRequest("/api/tokens/purchase", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tokens"] });

@@ -60,7 +60,7 @@ export default function NoticiaDetalle() {
       if (!user) {
         throw new Error("Debes iniciar sesión para comentar");
       }
-      return apiRequest("POST", `/api/comments`, {
+      return apiRequest(`/api/comments`, "POST", {
         contenido,
         noticiaId: noticiaId,
       });

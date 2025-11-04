@@ -42,7 +42,7 @@ export default function Sondeos() {
       if (!user) {
         throw new Error("Debes iniciar sesión para votar");
       }
-      return apiRequest("POST", `/api/polls/${pollId}/vote`, { optionId });
+      return apiRequest(`/api/polls/${pollId}/vote`, "POST", { optionId });
     },
     onSuccess: () => {
       // Invalidar queries para actualizar los datos

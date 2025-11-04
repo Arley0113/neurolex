@@ -77,7 +77,7 @@ export default function PropuestaDetalle() {
       if (!user) {
         throw new Error("Debes iniciar sesión para apoyar una propuesta");
       }
-      return apiRequest("POST", `/api/proposals/${id}/support`, {
+      return apiRequest(`/api/proposals/${id}/support`, "POST", {
         tipoToken: "TP",
         cantidad: 1,
       });
@@ -104,7 +104,7 @@ export default function PropuestaDetalle() {
       if (!user) {
         throw new Error("Debes iniciar sesión para comentar");
       }
-      return apiRequest("POST", `/api/comments`, {
+      return apiRequest(`/api/comments`, "POST", {
         contenido,
         propuestaId: id,
       });

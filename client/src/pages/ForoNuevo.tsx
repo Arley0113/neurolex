@@ -45,7 +45,8 @@ export default function ForoNuevo() {
       }
 
       if (user?.isAdmin) {
-        return apiRequest("POST", "/api/admin/debates", data);
+      return apiRequest("/api/admin/debates", "POST", data);
+
       } else {
         throw new Error("Solo los administradores pueden crear debates");
       }

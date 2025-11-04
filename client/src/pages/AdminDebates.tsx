@@ -73,9 +73,9 @@ export default function AdminDebates() {
   const createOrUpdateMutation = useMutation({
     mutationFn: async (data: any) => {
       if (editingDebate) {
-        return apiRequest("PUT", `/api/admin/debates/${editingDebate.id}`, data);
+        apiRequest(`/api/admin/debates/${editingDebate.id}`, "PUT", data);
       } else {
-        return apiRequest("POST", "/api/admin/debates", data);
+       return apiRequest("/api/admin/debates", "POST", data);
       }
     },
     onSuccess: () => {
@@ -99,7 +99,7 @@ export default function AdminDebates() {
   // Eliminar debate
   const deleteMutation = useMutation({
     mutationFn: async (debateId: string) => {
-      return apiRequest("DELETE", `/api/admin/debates/${debateId}`);
+      return apiRequest(`/api/admin/debates/${debateId}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/debates"] });
@@ -120,7 +120,7 @@ export default function AdminDebates() {
   // Toggle destacado
   const toggleDestacadoMutation = useMutation({
     mutationFn: async ({ id, destacado }: { id: string; destacado: boolean }) => {
-      return apiRequest("PUT", `/api/admin/debates/${id}`, {
+      return apiRequest(`/api/admin/debates/${id}`, "PUT", {
         destacado: !destacado,
       });
     },

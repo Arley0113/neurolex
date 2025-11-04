@@ -57,7 +57,7 @@ export function ProposalCard({
 
   const supportMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest("POST", `/api/proposals/${id}/support`, {
+      return apiRequest(`/api/proposals/${id}/support`, "POST", {
         tipoToken: "TP",
         cantidad: 1,
       });

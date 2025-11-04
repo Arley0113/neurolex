@@ -39,7 +39,7 @@ export function DonateModal({ isOpen, onClose, proposalId, proposalTitle }: Dona
   // Mutación para donar
   const donateMutation = useMutation({
     mutationFn: async (data: { proposalId: string; amount: number }) => {
-      return apiRequest("POST", "/api/proposals/donate", data);
+      return apiRequest("/api/proposals/donate", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/tokens"] });

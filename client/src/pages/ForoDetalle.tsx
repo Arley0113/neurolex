@@ -61,7 +61,7 @@ export default function ForoDetalle() {
       if (!user) {
         throw new Error("Debes iniciar sesión para comentar");
       }
-      return apiRequest("POST", `/api/debates/${id}/comments`, {
+      return apiRequest(`/api/debates/${id}/comments`, "POST", {
         contenido,
       });
     },
