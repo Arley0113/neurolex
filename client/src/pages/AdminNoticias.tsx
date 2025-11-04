@@ -55,9 +55,9 @@ export default function AdminNoticias() {
   const createOrUpdateMutation = useMutation({
     mutationFn: async (data: any) => {
       if (editingNews) {
-        return apiRequest("PUT", `/api/admin/news/${editingNews.id}`, data);
+        return apiRequest(`/api/admin/news/${editingNews.id}`, "PUT", data);
       } else {
-        return apiRequest("POST", "/api/admin/news", data);
+        return apiRequest("/api/admin/news", "POST", data);
       }
     },
     onSuccess: () => {
@@ -81,7 +81,7 @@ export default function AdminNoticias() {
   // Eliminar noticia
   const deleteMutation = useMutation({
     mutationFn: async (newsId: string) => {
-      return apiRequest("DELETE", `/api/admin/news/${newsId}`);
+      return apiRequest(`/api/admin/news/${newsId}`, "DELETE");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/news"] });
