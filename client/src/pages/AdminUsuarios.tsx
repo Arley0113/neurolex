@@ -56,7 +56,7 @@ export default function AdminUsuarios() {
 
   const updateUserMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      return apiRequest("PUT", `/api/admin/users/${id}`, data);
+      return apiRequest(`/api/admin/users/${id}`, "PUT", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });

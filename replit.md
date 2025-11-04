@@ -217,4 +217,8 @@ Mejoras de Seguridad Aplicadas:
 - Switch de admin conectado a endpoint `PUT /api/admin/users/:id`
 - Backend actualiza campo `isAdmin` correctamente
 - Frontend invalida cache y muestra feedback con toast
+- **Bug crítico corregido (4 Nov):** Parámetros invertidos en `apiRequest` de AdminUsuarios.tsx y AdminNoticias.tsx
+  - Antes: `apiRequest("PUT", url, data)` ❌
+  - Ahora: `apiRequest(url, "PUT", data)` ✅
+- Verificado con E2E: toggle activa/desactiva `is_admin` en DB y muestra toasts correctamente
 
