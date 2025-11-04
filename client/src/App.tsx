@@ -18,6 +18,7 @@ import AdminPropuestas from "@/pages/AdminPropuestas";
 import AdminSondeos from "@/pages/AdminSondeos";
 import AdminDebates from "@/pages/AdminDebates";
 import AdminUsuarios from "@/pages/AdminUsuarios";
+import AdminFuentes from "@/pages/AdminFuentes";
 import Noticias from "@/pages/Noticias";
 import NoticiaDetalle from "@/pages/NoticiaDetalle";
 import Propuestas from "@/pages/Propuestas";
@@ -48,6 +49,7 @@ function Router() {
       {/* Panel de administrador */}
       <Route path="/admin" component={Admin} />
       <Route path="/admin/noticias" component={AdminNoticias} />
+      <Route path="/admin/fuentes" component={AdminFuentes} />
       <Route path="/admin/propuestas" component={AdminPropuestas} />
       <Route path="/admin/sondeos" component={AdminSondeos} />
       <Route path="/admin/debates" component={AdminDebates} />

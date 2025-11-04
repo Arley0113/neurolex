@@ -214,6 +214,18 @@ export default function Admin() {
                 </Card>
               </Link>
 
+              <Link href="/admin/fuentes">
+                <Card className="hover-elevate cursor-pointer h-full" data-testid="card-admin-sources">
+                  <CardHeader>
+                    <Newspaper className="h-8 w-8 text-primary mb-2" />
+                    <CardTitle>Fuentes de Noticias</CardTitle>
+                    <CardDescription>
+                      Configurar scraping de fuentes RSS/HTML
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+
               <Link href="/admin/propuestas">
                 <Card className="hover-elevate cursor-pointer h-full" data-testid="card-admin-proposals">
                   <CardHeader>
