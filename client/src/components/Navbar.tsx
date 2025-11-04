@@ -29,7 +29,23 @@ interface NavbarProps {
 }
 
 export function Navbar({ user, tokensBalance }: NavbarProps) {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        window.location.href = '/login';
+      }
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+      window.location.href = '/login';
+    }
+  };
 
   const navLinks = [
     { href: "/", label: "Inicio" },
@@ -143,7 +159,11 @@ export function Navbar({ user, tokensBalance }: NavbarProps) {
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive cursor-pointer" data-testid="button-logout">
+                    <DropdownMenuItem 
+                      className="text-destructive cursor-pointer" 
+                      onClick={handleLogout}
+                      data-testid="button-logout"
+                    >
                       Cerrar Sesión
                     </DropdownMenuItem>
                   </DropdownMenuContent>

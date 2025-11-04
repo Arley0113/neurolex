@@ -128,6 +128,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cerrar sesión
+  app.post("/api/logout", async (req: Request, res: Response) => {
+    try {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Error al destruir sesión:", err);
+          return res.status(500).json({ error: "Error al cerrar sesión" });
+        }
+        
+        res.clearCookie('connect.sid');
+        res.json({ message: "Sesión cerrada exitosamente" });
+      });
+    } catch (error) {
+      console.error("Error en logout:", error);
+      res.status(500).json({ error: "Error al cerrar sesión" });
+    }
+  });
+
   // ===========================================================================
   // USUARIOS
   // ===========================================================================
